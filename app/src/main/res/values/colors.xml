@@ -44,6 +44,6 @@
     <color name="category_books">#795548</color>
     <color name="category_toys">#FF5722</color>
     <color name="category_other">#607D8B</color>
-
+    <color name="chip_background_selector">#FF9800</color>   <!-- Cam -->
 
 </resources>
