@@ -1,7 +1,6 @@
 package com.example.tradeupsprojecy.ui.adapters;
 
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,19 +39,23 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ListingV
     }
 
     public void setListings(List<Listing> listings) {
-        this.listings = listings;
+        this.listings = listings != null ? listings : new ArrayList<>();
         notifyDataSetChanged();
     }
 
     public void addListings(List<Listing> newListings) {
-        int startPosition = this.listings.size();
-        this.listings.addAll(newListings);
-        notifyItemRangeInserted(startPosition, newListings.size());
+        if (newListings != null && !newListings.isEmpty()) {
+            int startPosition = this.listings.size();
+            this.listings.addAll(newListings);
+            notifyItemRangeInserted(startPosition, newListings.size());
+        }
     }
 
     public void addListing(Listing listing) {
-        this.listings.add(0, listing);
-        notifyItemInserted(0);
+        if (listing != null) {
+            this.listings.add(0, listing);
+            notifyItemInserted(0);
+        }
     }
 
     public void removeListing(int position) {
@@ -87,93 +90,117 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ListingV
 
     class ListingViewHolder extends RecyclerView.ViewHolder {
 
-        private ImageView ivListingImage;
-        private TextView tvTitle;
-        private TextView tvPrice;
-        private TextView tvLocation;
-        private TextView tvCondition;
-        private TextView tvTime;
-        private ImageView ivFavorite;
-        private View layoutFeatured;
+        // FIX: Match với IDs trong item_listing.xml
+        private ImageView listingImageView;
+        private TextView titleTextView;
+        private TextView priceTextView;
+        private TextView locationTextView;
+        private TextView conditionTextView;
+        private TextView ratingTextView;
 
         public ListingViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            ivListingImage = itemView.findViewById(R.id.iv_listing_image);
-            tvTitle = itemView.findViewById(R.id.tv_title);
-            tvPrice = itemView.findViewById(R.id.tv_price);
-            tvLocation = itemView.findViewById(R.id.tv_location);
-            tvCondition = itemView.findViewById(R.id.tv_condition);
-            tvTime = itemView.findViewById(R.id.tv_time);
-            ivFavorite = itemView.findViewById(R.id.iv_favorite);
-            layoutFeatured = itemView.findViewById(R.id.layout_featured);
+            // FIX: Sử dụng đúng ID từ layout
+            listingImageView = itemView.findViewById(R.id.listingImageView);
+            titleTextView = itemView.findViewById(R.id.titleTextView);
+            priceTextView = itemView.findViewById(R.id.priceTextView);
+            locationTextView = itemView.findViewById(R.id.locationTextView);
+            conditionTextView = itemView.findViewById(R.id.conditionTextView);
+            ratingTextView = itemView.findViewById(R.id.ratingTextView);
 
             // Click listeners
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
+                    if (position != RecyclerView.NO_POSITION && position < listings.size()) {
                         listener.onListingClick(listings.get(position));
                     }
                 }
             });
 
-            ivFavorite.setOnClickListener(v -> {
-                if (listener != null) {
-                    int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
-                        listener.onFavoriteClick(listings.get(position));
+            // FIX: Favorite click (sẽ cần thêm favorite button vào layout sau)
+            // Tạm thời comment out vì layout chưa có favorite button
+            /*
+            if (favoriteButton != null) {
+                favoriteButton.setOnClickListener(v -> {
+                    if (listener != null) {
+                        int position = getAdapterPosition();
+                        if (position != RecyclerView.NO_POSITION && position < listings.size()) {
+                            listener.onFavoriteClick(listings.get(position));
+                        }
                     }
-                }
-            });
+                });
+            }
+            */
         }
 
         public void bind(Listing listing) {
+            if (listing == null) return;
+
             // Set title
-            tvTitle.setText(listing.getTitle());
-
-            // Set price
-            NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-            tvPrice.setText(formatter.format(listing.getPrice()));
-
-            // Set location
-            tvLocation.setText(listing.getLocation() != null ? listing.getLocation() : "Chưa có địa chỉ");
-
-            // Set condition
-            tvCondition.setText(getConditionText(listing.getCondition()));
-
-            // Set time
-            tvTime.setText(DateUtils.getTimeAgo(listing.getCreatedAt()));
-
-            // Set featured badge
-            layoutFeatured.setVisibility(listing.getIsFeatured() ? View.VISIBLE : View.GONE);
-
-            // Load image
-            if (listing.getImageUrls() != null && !listing.getImageUrls().isEmpty()) {
-                Glide.with(context)
-                        .load(listing.getImageUrls().get(0))
-                        .placeholder(R.drawable.placeholder_image)
-                        .error(R.drawable.error_image)
-                        .centerCrop()
-                        .into(ivListingImage);
-            } else {
-                ivListingImage.setImageResource(R.drawable.placeholder_image);
+            if (titleTextView != null) {
+                titleTextView.setText(listing.getTitle() != null ? listing.getTitle() : "No title");
             }
 
-            // Set favorite state (implement later with user preferences)
-            // ivFavorite.setImageResource(listing.isFavorite() ? R.drawable.ic_heart_filled : R.drawable.ic_heart_outline);
+            // Set price (layout có priceTextView ở góc trên)
+            if (priceTextView != null) {
+                try {
+                    if (listing.getPrice() != null) {
+                        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+                        priceTextView.setText(formatter.format(listing.getPrice()));
+                    } else {
+                        priceTextView.setText("Liên hệ");
+                    }
+                } catch (Exception e) {
+                    priceTextView.setText("Liên hệ");
+                }
+            }
+
+            // Set location
+            if (locationTextView != null) {
+                locationTextView.setText(listing.getLocation() != null ? listing.getLocation() : "2.5 km away");
+            }
+
+            // Set condition
+            if (conditionTextView != null) {
+                conditionTextView.setText(getConditionText(listing.getCondition()));
+            }
+
+            // Set rating (fake rating cho demo)
+            if (ratingTextView != null) {
+                ratingTextView.setText("4.5");
+            }
+
+            // Load image
+            if (listingImageView != null) {
+                if (listing.getImageUrls() != null && !listing.getImageUrls().isEmpty()) {
+                    try {
+                        Glide.with(context)
+                                .load(listing.getImageUrls().get(0))
+                                .placeholder(android.R.drawable.ic_menu_gallery)
+                                .error(android.R.drawable.ic_dialog_alert)
+                                .centerCrop()
+                                .into(listingImageView);
+                    } catch (Exception e) {
+                        listingImageView.setImageResource(android.R.drawable.ic_menu_gallery);
+                    }
+                } else {
+                    listingImageView.setImageResource(android.R.drawable.ic_menu_gallery);
+                }
+            }
         }
 
         private String getConditionText(String condition) {
-            if (condition == null) return "Không rõ";
+            if (condition == null) return "Like New";
 
             switch (condition) {
-                case Constants.CONDITION_NEW: return "Mới";
-                case Constants.CONDITION_LIKE_NEW: return "Như mới";
-                case Constants.CONDITION_GOOD: return "Tốt";
-                case Constants.CONDITION_FAIR: return "Khá";
-                case Constants.CONDITION_POOR: return "Cũ";
-                default: return "Không rõ";
+                case Constants.CONDITION_NEW: return "New";
+                case Constants.CONDITION_LIKE_NEW: return "Like New";
+                case Constants.CONDITION_GOOD: return "Good";
+                case Constants.CONDITION_FAIR: return "Fair";
+                case Constants.CONDITION_POOR: return "Poor";
+                default: return "Like New";
             }
         }
     }

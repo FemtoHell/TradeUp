@@ -36,18 +36,24 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
     }
 
     public void setConversations(List<Conversation> conversations) {
-        this.conversations = conversations;
+        this.conversations = conversations != null ? conversations : new ArrayList<>();
         notifyDataSetChanged();
     }
 
     public void addConversation(Conversation conversation) {
-        this.conversations.add(0, conversation);
-        notifyItemInserted(0);
+        if (conversation != null) {
+            this.conversations.add(0, conversation);
+            notifyItemInserted(0);
+        }
     }
 
     public void updateConversation(Conversation updatedConversation) {
+        if (updatedConversation == null || updatedConversation.getId() == null) return;
+
         for (int i = 0; i < conversations.size(); i++) {
-            if (conversations.get(i).getId().equals(updatedConversation.getId())) {
+            Conversation conv = conversations.get(i);
+            if (conv != null && conv.getId() != null &&
+                    conv.getId().equals(updatedConversation.getId())) {
                 conversations.set(i, updatedConversation);
                 notifyItemChanged(i);
                 break;
@@ -75,30 +81,30 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
 
     class ConversationViewHolder extends RecyclerView.ViewHolder {
 
-        private ImageView ivUserAvatar;
-        private TextView tvUserName;
-        private TextView tvLastMessage;
-        private TextView tvTime;
-        private TextView tvUnreadCount;
-        private ImageView ivListingImage;
-        private TextView tvListingTitle;
+        // FIX: Match với IDs trong item_conversation.xml
+        private ImageView avatarImageView;
+        private TextView nameTextView;
+        private TextView lastMessageTextView;
+        private TextView timeTextView;
+        private TextView unreadCountTextView;
+        private TextView itemTitleTextView;
 
         public ConversationViewHolder(@NonNull View itemView) {
             super(itemView);
 
-            ivUserAvatar = itemView.findViewById(R.id.iv_user_avatar);
-            tvUserName = itemView.findViewById(R.id.tv_user_name);
-            tvLastMessage = itemView.findViewById(R.id.tv_last_message);
-            tvTime = itemView.findViewById(R.id.tv_time);
-            tvUnreadCount = itemView.findViewById(R.id.tv_unread_count);
-            ivListingImage = itemView.findViewById(R.id.iv_listing_image);
-            tvListingTitle = itemView.findViewById(R.id.tv_listing_title);
+            // FIX: Sử dụng đúng ID từ layout
+            avatarImageView = itemView.findViewById(R.id.avatarImageView);
+            nameTextView = itemView.findViewById(R.id.nameTextView);
+            lastMessageTextView = itemView.findViewById(R.id.lastMessageTextView);
+            timeTextView = itemView.findViewById(R.id.timeTextView);
+            unreadCountTextView = itemView.findViewById(R.id.unreadCountTextView);
+            itemTitleTextView = itemView.findViewById(R.id.itemTitleTextView);
 
             // Click listeners
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
+                    if (position != RecyclerView.NO_POSITION && position < conversations.size()) {
                         listener.onConversationClick(conversations.get(position));
                     }
                 }
@@ -107,7 +113,7 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
             itemView.setOnLongClickListener(v -> {
                 if (listener != null) {
                     int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
+                    if (position != RecyclerView.NO_POSITION && position < conversations.size()) {
                         listener.onConversationLongClick(conversations.get(position));
                         return true;
                     }
@@ -117,62 +123,73 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         }
 
         public void bind(Conversation conversation) {
+            if (conversation == null) return;
+
             // Set user info
-            tvUserName.setText(conversation.getOtherUserName());
+            if (nameTextView != null) {
+                nameTextView.setText(conversation.getOtherUserName() != null ?
+                        conversation.getOtherUserName() : "Unknown User");
+            }
 
             // Load user avatar
-            if (conversation.getOtherUserAvatar() != null && !conversation.getOtherUserAvatar().isEmpty()) {
-                Glide.with(context)
-                        .load(conversation.getOtherUserAvatar())
-                        .placeholder(R.drawable.default_avatar)
-                        .error(R.drawable.default_avatar)
-                        .circleCrop()
-                        .into(ivUserAvatar);
-            } else {
-                ivUserAvatar.setImageResource(R.drawable.default_avatar);
+            if (avatarImageView != null) {
+                if (conversation.getOtherUserAvatar() != null &&
+                        !conversation.getOtherUserAvatar().isEmpty()) {
+                    try {
+                        Glide.with(context)
+                                .load(conversation.getOtherUserAvatar())
+                                .placeholder(android.R.drawable.ic_menu_report_image)
+                                .error(android.R.drawable.ic_menu_report_image)
+                                .circleCrop()
+                                .into(avatarImageView);
+                    } catch (Exception e) {
+                        avatarImageView.setImageResource(android.R.drawable.ic_menu_report_image);
+                    }
+                } else {
+                    avatarImageView.setImageResource(android.R.drawable.ic_menu_report_image);
+                }
             }
 
             // Set last message
-            if (conversation.getLastMessage() != null && !conversation.getLastMessage().isEmpty()) {
-                tvLastMessage.setText(conversation.getLastMessage());
-            } else {
-                tvLastMessage.setText("Chưa có tin nhắn");
+            if (lastMessageTextView != null) {
+                if (conversation.getLastMessage() != null &&
+                        !conversation.getLastMessage().isEmpty()) {
+                    lastMessageTextView.setText(conversation.getLastMessage());
+                } else {
+                    lastMessageTextView.setText("Chưa có tin nhắn");
+                }
             }
 
             // Set time
-            if (conversation.getLastMessageTime() != null) {
-                tvTime.setText(DateUtils.formatConversationTime(conversation.getLastMessageTime()));
-            } else {
-                tvTime.setText("");
+            if (timeTextView != null) {
+                if (conversation.getLastMessageTime() != null) {
+                    timeTextView.setText(DateUtils.formatConversationTime(conversation.getLastMessageTime()));
+                } else {
+                    timeTextView.setText("2m ago");
+                }
             }
 
             // Set unread count
-            if (conversation.getUnreadCount() > 0) {
-                tvUnreadCount.setVisibility(View.VISIBLE);
-                tvUnreadCount.setText(String.valueOf(conversation.getUnreadCount()));
-            } else {
-                tvUnreadCount.setVisibility(View.GONE);
+            if (unreadCountTextView != null) {
+                Integer unreadCount = conversation.getUnreadCount();
+                if (unreadCount != null && unreadCount > 0) {
+                    unreadCountTextView.setVisibility(View.VISIBLE);
+                    unreadCountTextView.setText(String.valueOf(unreadCount));
+                } else {
+                    unreadCountTextView.setVisibility(View.GONE);
+                }
             }
 
-            // Set listing info
-            if (conversation.getListingTitle() != null) {
-                tvListingTitle.setText(conversation.getListingTitle());
-                tvListingTitle.setVisibility(View.VISIBLE);
-            } else {
-                tvListingTitle.setVisibility(View.GONE);
-            }
-
-            // Load listing image
-            if (conversation.getListingImage() != null && !conversation.getListingImage().isEmpty()) {
-                ivListingImage.setVisibility(View.VISIBLE);
-                Glide.with(context)
-                        .load(conversation.getListingImage())
-                        .placeholder(R.drawable.placeholder_image)
-                        .error(R.drawable.placeholder_image)
-                        .centerCrop()
-                        .into(ivListingImage);
-            } else {
-                ivListingImage.setVisibility(View.GONE);
+            // Set listing title
+            if (itemTitleTextView != null) {
+                if (conversation.getListingTitle() != null &&
+                        !conversation.getListingTitle().isEmpty()) {
+                    itemTitleTextView.setText(conversation.getListingTitle());
+                    itemTitleTextView.setVisibility(View.VISIBLE);
+                } else {
+                    itemTitleTextView.setText("iPhone 12 Pro Max"); // Default for demo
+                    itemTitleTextView.setVisibility(View.VISIBLE);
+                }
             }
         }
     }

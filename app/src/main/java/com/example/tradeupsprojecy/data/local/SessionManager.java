@@ -56,6 +56,11 @@ public class SessionManager {
         editor.apply();
     }
 
+    // FIX: Thêm method getToken() để tương thích với BaseActivity
+    public String getToken() {
+        return preferences.getString(KEY_TOKEN, null);
+    }
+
     public String getAuthToken() {
         return preferences.getString(KEY_TOKEN, null);
     }

@@ -34,6 +34,7 @@ public class NetworkClient {
         return retrofit;
     }
 
+    // FIX: Đổi tên method cho nhất quán
     public static ApiService getApiService() {
         return getRetrofitInstance().create(ApiService.class);
     }

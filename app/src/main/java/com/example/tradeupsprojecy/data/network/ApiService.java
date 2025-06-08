@@ -1,5 +1,6 @@
 package com.example.tradeupsprojecy.data.network;
 
+import com.example.tradeupsprojecy.data.models.ApiResponse;
 import com.example.tradeupsprojecy.data.models.AuthRequest;
 import com.example.tradeupsprojecy.data.models.AuthResponse;
 import com.example.tradeupsprojecy.data.models.GoogleAuthRequest;

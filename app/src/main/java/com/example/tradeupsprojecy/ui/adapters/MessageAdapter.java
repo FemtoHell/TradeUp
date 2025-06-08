@@ -26,30 +26,35 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     public MessageAdapter(Context context, String currentUserId) {
         this.context = context;
-        this.currentUserId = currentUserId;
+        this.currentUserId = currentUserId != null ? currentUserId : "";
         this.messages = new ArrayList<>();
     }
 
     public void setMessages(List<Message> messages) {
-        this.messages = messages;
+        this.messages = messages != null ? messages : new ArrayList<>();
         notifyDataSetChanged();
     }
 
     public void addMessage(Message message) {
-        this.messages.add(message);
-        notifyItemInserted(messages.size() - 1);
+        if (message != null) {
+            this.messages.add(message);
+            notifyItemInserted(messages.size() - 1);
+        }
     }
 
     public void addMessages(List<Message> newMessages) {
-        int startPosition = this.messages.size();
-        this.messages.addAll(newMessages);
-        notifyItemRangeInserted(startPosition, newMessages.size());
+        if (newMessages != null && !newMessages.isEmpty()) {
+            int startPosition = this.messages.size();
+            this.messages.addAll(newMessages);
+            notifyItemRangeInserted(startPosition, newMessages.size());
+        }
     }
 
     @Override
-    public int getViewType(int position) {
+    public int getItemViewType(int position) {
         Message message = messages.get(position);
-        if (message.getSenderId().equals(currentUserId)) {
+        if (message != null && message.getSenderId() != null &&
+                message.getSenderId().equals(currentUserId)) {
             return VIEW_TYPE_SENT;
         } else {
             return VIEW_TYPE_RECEIVED;
@@ -71,6 +76,7 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Message message = messages.get(position);
+        if (message == null) return;
 
         if (holder instanceof SentMessageViewHolder) {
             ((SentMessageViewHolder) holder).bind(message);
@@ -87,35 +93,31 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     // Sent message ViewHolder
     class SentMessageViewHolder extends RecyclerView.ViewHolder {
 
-        private TextView tvMessage;
-        private TextView tvTime;
-        private ImageView ivMessageStatus;
+        // FIX: Match với IDs trong item_message_sent.xml
+        private TextView messageTextView;
+        private TextView timeTextView;
 
         public SentMessageViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvMessage = itemView.findViewById(R.id.tv_message);
-            tvTime = itemView.findViewById(R.id.tv_time);
-            ivMessageStatus = itemView.findViewById(R.id.iv_message_status);
+            messageTextView = itemView.findViewById(R.id.messageTextView);
+            timeTextView = itemView.findViewById(R.id.timeTextView);
         }
 
         public void bind(Message message) {
-            tvMessage.setText(message.getContent());
-            tvTime.setText(DateUtils.formatMessageTime(message.getCreatedAt()));
+            if (message == null) return;
 
-            // Set message status icon
-            switch (message.getStatus()) {
-                case "SENT":
-                    ivMessageStatus.setImageResource(R.drawable.ic_message_sent);
-                    break;
-                case "DELIVERED":
-                    ivMessageStatus.setImageResource(R.drawable.ic_message_delivered);
-                    break;
-                case "READ":
-                    ivMessageStatus.setImageResource(R.drawable.ic_message_read);
-                    break;
-                default:
-                    ivMessageStatus.setImageResource(R.drawable.ic_message_pending);
-                    break;
+            // Set message content
+            if (messageTextView != null) {
+                messageTextView.setText(message.getContent() != null ? message.getContent() : "");
+            }
+
+            // Set time
+            if (timeTextView != null) {
+                if (message.getCreatedAt() != null) {
+                    timeTextView.setText(DateUtils.formatMessageTime(message.getCreatedAt()));
+                } else {
+                    timeTextView.setText("");
+                }
             }
         }
     }
@@ -123,34 +125,31 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     // Received message ViewHolder
     class ReceivedMessageViewHolder extends RecyclerView.ViewHolder {
 
-        private TextView tvMessage;
-        private TextView tvTime;
-        private TextView tvSenderName;
-        private ImageView ivSenderAvatar;
+        // FIX: Match với IDs trong item_message_received.xml
+        private TextView messageTextView;
+        private TextView timeTextView;
 
         public ReceivedMessageViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvMessage = itemView.findViewById(R.id.tv_message);
-            tvTime = itemView.findViewById(R.id.tv_time);
-            tvSenderName = itemView.findViewById(R.id.tv_sender_name);
-            ivSenderAvatar = itemView.findViewById(R.id.iv_sender_avatar);
+            messageTextView = itemView.findViewById(R.id.messageTextView);
+            timeTextView = itemView.findViewById(R.id.timeTextView);
         }
 
         public void bind(Message message) {
-            tvMessage.setText(message.getContent());
-            tvTime.setText(DateUtils.formatMessageTime(message.getCreatedAt()));
-            tvSenderName.setText(message.getSenderName());
+            if (message == null) return;
 
-            // Load sender avatar
-            if (message.getSenderAvatar() != null && !message.getSenderAvatar().isEmpty()) {
-                Glide.with(context)
-                        .load(message.getSenderAvatar())
-                        .placeholder(R.drawable.default_avatar)
-                        .error(R.drawable.default_avatar)
-                        .circleCrop()
-                        .into(ivSenderAvatar);
-            } else {
-                ivSenderAvatar.setImageResource(R.drawable.default_avatar);
+            // Set message content
+            if (messageTextView != null) {
+                messageTextView.setText(message.getContent() != null ? message.getContent() : "");
+            }
+
+            // Set time
+            if (timeTextView != null) {
+                if (message.getCreatedAt() != null) {
+                    timeTextView.setText(DateUtils.formatMessageTime(message.getCreatedAt()));
+                } else {
+                    timeTextView.setText("");
+                }
             }
         }
     }

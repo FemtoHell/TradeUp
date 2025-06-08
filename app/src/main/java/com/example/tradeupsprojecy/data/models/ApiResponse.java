@@ -1,4 +1,4 @@
-package com.example.tradeupsprojecy.data.network;
+package com.example.tradeupsprojecy.data.models;
 
 public class ApiResponse<T> {
     private boolean success;

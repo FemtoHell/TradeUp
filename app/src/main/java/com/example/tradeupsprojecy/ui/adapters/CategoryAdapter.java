@@ -35,7 +35,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
     }
 
     public void setCategories(List<Category> categories) {
-        this.categories = categories;
+        this.categories = categories != null ? categories : new ArrayList<>();
         notifyDataSetChanged();
     }
 
@@ -92,7 +92,7 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
             itemView.setOnClickListener(v -> {
                 if (listener != null) {
                     int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION) {
+                    if (position != RecyclerView.NO_POSITION && position < categories.size()) {
                         setSelectedPosition(position);
                         listener.onCategoryClick(categories.get(position), position);
                     }
@@ -101,44 +101,62 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         }
 
         public void bind(Category category, boolean isSelected) {
-            tvCategoryName.setText(category.getName());
+            if (category == null) return;
+
+            // Set category name
+            if (tvCategoryName != null) {
+                tvCategoryName.setText(category.getName() != null ? category.getName() : "Unknown");
+            }
 
             // Set selected state
-            categoryContainer.setSelected(isSelected);
+            if (categoryContainer != null) {
+                categoryContainer.setSelected(isSelected);
+                // Change background color based on selection
+                categoryContainer.setBackgroundColor(isSelected ?
+                        context.getResources().getColor(android.R.color.holo_blue_light) :
+                        context.getResources().getColor(android.R.color.transparent));
+            }
 
             // Load category icon
-            if (category.getIconUrl() != null && !category.getIconUrl().isEmpty()) {
-                Glide.with(context)
-                        .load(category.getIconUrl())
-                        .placeholder(R.drawable.ic_category_default)
-                        .error(R.drawable.ic_category_default)
-                        .into(ivCategoryIcon);
-            } else {
-                // Set default icon based on category name
-                ivCategoryIcon.setImageResource(getDefaultCategoryIcon(category.getName()));
+            if (ivCategoryIcon != null) {
+                if (category.getIconUrl() != null && !category.getIconUrl().isEmpty()) {
+                    try {
+                        Glide.with(context)
+                                .load(category.getIconUrl())
+                                .placeholder(android.R.drawable.ic_menu_info_details)
+                                .error(android.R.drawable.ic_menu_info_details)
+                                .into(ivCategoryIcon);
+                    } catch (Exception e) {
+                        ivCategoryIcon.setImageResource(getDefaultCategoryIcon(category.getName()));
+                    }
+                } else {
+                    // Set default icon based on category name
+                    ivCategoryIcon.setImageResource(getDefaultCategoryIcon(category.getName()));
+                }
             }
         }
 
         private int getDefaultCategoryIcon(String categoryName) {
-            if (categoryName == null) return R.drawable.ic_category_default;
+            if (categoryName == null) return android.R.drawable.ic_menu_info_details;
 
+            // Use system drawables as fallback
             switch (categoryName.toLowerCase()) {
                 case "điện tử":
-                    return R.drawable.ic_electronics;
+                    return android.R.drawable.ic_menu_call;
                 case "thời trang":
-                    return R.drawable.ic_fashion;
+                    return android.R.drawable.ic_menu_gallery;
                 case "xe cộ":
-                    return R.drawable.ic_vehicle;
+                    return android.R.drawable.ic_menu_directions;
                 case "nhà cửa":
-                    return R.drawable.ic_home;
+                    return android.R.drawable.ic_menu_myplaces;
                 case "sách":
-                    return R.drawable.ic_book;
+                    return android.R.drawable.ic_menu_agenda;
                 case "thể thao":
-                    return R.drawable.ic_sports;
+                    return android.R.drawable.ic_menu_compass;
                 case "sức khỏe":
-                    return R.drawable.ic_health;
+                    return android.R.drawable.ic_menu_help;
                 default:
-                    return R.drawable.ic_category_default;
+                    return android.R.drawable.ic_menu_info_details;
             }
         }
     }

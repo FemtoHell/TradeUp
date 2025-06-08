@@ -4,7 +4,7 @@ import android.util.Log;
 import com.example.tradeupsprojecy.data.models.AuthRequest;
 import com.example.tradeupsprojecy.data.models.AuthResponse;
 import com.example.tradeupsprojecy.data.models.GoogleAuthRequest;
-import com.example.tradeupsprojecy.data.network.ApiServices;
+import com.example.tradeupsprojecy.data.network.ApiService; // FIX: Bỏ 's'
 import com.example.tradeupsprojecy.data.network.NetworkClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -13,10 +13,10 @@ import retrofit2.Response;
 public class AuthRepository {
 
     private static final String TAG = "AuthRepository";
-    private ApiServices apiServices;
+    private ApiService apiService; // FIX: Bỏ 's'
 
     public AuthRepository() {
-        this.apiServices = NetworkClient.getApiServices();
+        this.apiService = NetworkClient.getApiService(); // FIX: Bỏ 's'
     }
 
     // Interface for callbacks
@@ -29,7 +29,7 @@ public class AuthRepository {
     public void login(String email, String password, AuthCallback callback) {
         AuthRequest request = new AuthRequest(email, password);
 
-        Call<AuthResponse> call = apiServices.login(request);
+        Call<AuthResponse> call = apiService.login(request); // FIX: Bỏ 's'
         call.enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
@@ -60,7 +60,7 @@ public class AuthRepository {
     public void register(String email, String password, String fullName, AuthCallback callback) {
         AuthRequest request = new AuthRequest(email, password, fullName);
 
-        Call<AuthResponse> call = apiServices.register(request);
+        Call<AuthResponse> call = apiService.register(request); // FIX: Bỏ 's'
         call.enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
@@ -89,7 +89,7 @@ public class AuthRepository {
 
     // Google Sign In
     public void googleSignIn(GoogleAuthRequest request, AuthCallback callback) {
-        Call<AuthResponse> call = apiServices.googleAuth(request);
+        Call<AuthResponse> call = apiService.googleLogin(request); // FIX: Đổi method name
         call.enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
