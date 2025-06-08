@@ -4,25 +4,19 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import com.google.android.gms.auth.api.signin.*;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
 import com.example.tradeupsprojecy.models.*;
 import com.example.tradeupsprojecy.network.*;
 import com.example.tradeupsprojecy.utils.SessionManager;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class RegisterActivity extends AppCompatActivity {
-    private static final int RC_SIGN_IN = 9001;
 
     private TextInputEditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
     private MaterialCheckBox termsCheckBox;
@@ -31,7 +25,6 @@ public class RegisterActivity extends AppCompatActivity {
     private ImageView backButton;
 
     private SessionManager sessionManager;
-    private GoogleSignInClient googleSignInClient;
     private ApiService apiService;
 
     @Override
@@ -41,7 +34,6 @@ public class RegisterActivity extends AppCompatActivity {
 
         initViews();
         initServices();
-        setupGoogleSignIn();
         setupListeners();
     }
 
@@ -55,6 +47,10 @@ public class RegisterActivity extends AppCompatActivity {
         googleSignUpButton = findViewById(R.id.googleSignUpButton);
         loginTextView = findViewById(R.id.loginTextView);
         backButton = findViewById(R.id.backButton);
+
+        // Hide Google Sign-In for now
+        googleSignUpButton.setVisibility(View.GONE);
+        findViewById(R.id.orTextView).setVisibility(View.GONE);
 
         // Enable register button when all conditions are met
         TextWatcher textWatcher = new TextWatcher() {
@@ -82,19 +78,9 @@ public class RegisterActivity extends AppCompatActivity {
         apiService = NetworkClient.getApiService();
     }
 
-    private void setupGoogleSignIn() {
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
-                .build();
-
-        googleSignInClient = GoogleSignIn.getClient(this, gso);
-    }
-
     private void setupListeners() {
         backButton.setOnClickListener(v -> finish());
         registerButton.setOnClickListener(v -> performRegister());
-        googleSignUpButton.setOnClickListener(v -> signUpWithGoogle());
         loginTextView.setOnClickListener(v -> finish());
     }
 
@@ -125,102 +111,23 @@ public class RegisterActivity extends AppCompatActivity {
         if (!validateInputs(name, email, password, confirmPassword)) return;
 
         setLoading(true);
-        AuthRequest request = new AuthRequest(email, password, name);
 
-        apiService.register(request).enqueue(new Callback<AuthResponse>() {
-            @Override
-            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                setLoading(false);
-
-                if (response.isSuccessful() && response.body() != null) {
-                    AuthResponse authResponse = response.body();
-                    if (authResponse.isSuccess()) {
-                        // Save session
-                        sessionManager.saveAuthToken(authResponse.getToken());
-                        sessionManager.saveUserDetails(
-                                authResponse.getUser().getEmail(),
-                                authResponse.getUser().getFullName()
-                        );
-
-                        showMessage("Registration successful!");
-                        navigateToMain();
-                    } else {
-                        showMessage(authResponse.getMessage());
-                    }
-                } else {
-                    showMessage("Registration failed. Please try again.");
-                }
-            }
-
-            @Override
-            public void onFailure(Call<AuthResponse> call, Throwable t) {
-                setLoading(false);
-                showMessage("Network error: " + t.getMessage());
-            }
-        });
+        // For demo purposes, simulate successful registration
+        simulateRegistration(name, email, password);
     }
 
-    private void signUpWithGoogle() {
-        Intent signInIntent = googleSignInClient.getSignInIntent();
-        startActivityForResult(signInIntent, RC_SIGN_IN);
-    }
+    private void simulateRegistration(String name, String email, String password) {
+        // Simulate network delay
+        registerButton.postDelayed(() -> {
+            setLoading(false);
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+            // Save demo session
+            sessionManager.saveAuthToken("demo_token_123");
+            sessionManager.saveUserDetails(email, name);
 
-        if (requestCode == RC_SIGN_IN) {
-            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-            try {
-                GoogleSignInAccount account = task.getResult(ApiException.class);
-                handleGoogleSignUpSuccess(account);
-            } catch (ApiException e) {
-                showMessage("Google sign up failed: " + e.getMessage());
-            }
-        }
-    }
-
-    private void handleGoogleSignUpSuccess(GoogleSignInAccount account) {
-        setLoading(true);
-
-        GoogleAuthRequest request = new GoogleAuthRequest();
-        request.setIdToken(account.getIdToken());
-        request.setEmail(account.getEmail());
-        request.setFullName(account.getDisplayName());
-        if (account.getPhotoUrl() != null) {
-            request.setProfileImageUrl(account.getPhotoUrl().toString());
-        }
-
-        apiService.googleLogin(request).enqueue(new Callback<AuthResponse>() {
-            @Override
-            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
-                setLoading(false);
-
-                if (response.isSuccessful() && response.body() != null) {
-                    AuthResponse authResponse = response.body();
-                    if (authResponse.isSuccess()) {
-                        sessionManager.saveAuthToken(authResponse.getToken());
-                        sessionManager.saveUserDetails(
-                                authResponse.getUser().getEmail(),
-                                authResponse.getUser().getFullName()
-                        );
-
-                        showMessage("Google sign up successful!");
-                        navigateToMain();
-                    } else {
-                        showMessage(authResponse.getMessage());
-                    }
-                } else {
-                    showMessage("Google sign up failed. Please try again.");
-                }
-            }
-
-            @Override
-            public void onFailure(Call<AuthResponse> call, Throwable t) {
-                setLoading(false);
-                showMessage("Network error: " + t.getMessage());
-            }
-        });
+            showMessage("Registration successful!");
+            navigateToMain();
+        }, 1500);
     }
 
     private boolean validateInputs(String name, String email, String password, String confirmPassword) {
@@ -264,7 +171,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void setLoading(boolean loading) {
         registerButton.setEnabled(!loading);
-        googleSignUpButton.setEnabled(!loading);
+        registerButton.setText(loading ? "Creating account..." : "Sign Up");
     }
 
     private void showMessage(String message) {

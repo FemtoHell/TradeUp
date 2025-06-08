@@ -1,4 +1,4 @@
-package com.example.tradeupsprojecy.models;
+package com.example.tradeupsprojecy.network;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;

@@ -18,6 +18,8 @@
             android:layout_height="@dimen/icon_size"
             android:src="@drawable/ic_arrow_back"
             android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="@dimen/spacing_small"
+            app:tint="@color/text_primary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -53,7 +55,6 @@
             android:layout_marginTop="@dimen/spacing_xlarge"
             android:hint="Full Name"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:startIconDrawable="@drawable/ic_person"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/subtitleTextView">
@@ -73,7 +74,6 @@
             android:layout_marginTop="@dimen/spacing_medium"
             android:hint="Email"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:startIconDrawable="@drawable/ic_email"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/nameInputLayout">
@@ -93,7 +93,6 @@
             android:layout_marginTop="@dimen/spacing_medium"
             android:hint="Password"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:startIconDrawable="@drawable/ic_lock"
             app:endIconMode="password_toggle"
             app:helperText="At least 8 characters"
             app:layout_constraintEnd_toEndOf="parent"
@@ -115,7 +114,6 @@
             android:layout_marginTop="@dimen/spacing_medium"
             android:hint="Confirm Password"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-            app:startIconDrawable="@drawable/ic_lock"
             app:endIconMode="password_toggle"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -187,6 +185,8 @@
             android:text="Already have an account? Login"
             android:textColor="@color/text_secondary"
             android:textSize="@dimen/text_medium"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="@dimen/spacing_small"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

@@ -1,5 +1,6 @@
-package com.example.tradeupsprojecy.models;
+package com.example.tradeupsprojecy.network;
 
+import com.example.tradeupsprojecy.models.*;
 import retrofit2.Call;
 import retrofit2.http.*;
 
