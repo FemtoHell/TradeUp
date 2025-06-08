@@ -11,6 +11,7 @@ public class SessionManager {
     private static final String KEY_USER_EMAIL = "user_email";
     private static final String KEY_USER_NAME = "user_name";
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
+    private static final String KEY_USER_ID = "user_id";
 
     private SharedPreferences preferences;
     private SharedPreferences.Editor editor;
@@ -34,6 +35,15 @@ public class SessionManager {
         editor = preferences.edit();
     }
 
+    public void createLoginSession(String userId, String token, String email, String name) {
+        editor.putString(KEY_USER_ID, userId);
+        editor.putString(KEY_TOKEN, token);
+        editor.putString(KEY_USER_EMAIL, email);
+        editor.putString(KEY_USER_NAME, name);
+        editor.putBoolean(KEY_IS_LOGGED_IN, true);
+        editor.apply();
+    }
+
     public void saveAuthToken(String token) {
         editor.putString(KEY_TOKEN, token);
         editor.putBoolean(KEY_IS_LOGGED_IN, true);
@@ -51,7 +61,9 @@ public class SessionManager {
     }
 
     public boolean isLoggedIn() {
-        return preferences.getBoolean(KEY_IS_LOGGED_IN, false);
+        boolean hasToken = preferences.getString(KEY_TOKEN, null) != null;
+        boolean isLoggedIn = preferences.getBoolean(KEY_IS_LOGGED_IN, false);
+        return hasToken && isLoggedIn;
     }
 
     public void logout() {
@@ -65,5 +77,9 @@ public class SessionManager {
 
     public String getUserName() {
         return preferences.getString(KEY_USER_NAME, "");
+    }
+
+    public String getUserId() {
+        return preferences.getString(KEY_USER_ID, "");
     }
 }

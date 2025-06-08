@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main_navigation"
+    app:startDestination="@id/navigation_home">
+
+    <fragment
+        android:id="@+id/navigation_home"
+        android:name="com.example.tradeupsprojecy.HomeFragment"
+        android:label="Home" />
+
+    <fragment
+        android:id="@+id/navigation_search"
+        android:name="com.example.tradeupsprojecy.SearchFragment"
+        android:label="Search" />
+
+    <fragment
+        android:id="@+id/navigation_add_listing"
+        android:name="com.example.tradeupsprojecy.AddListingFragment"
+        android:label="Add Listing" />
+
+    <fragment
+        android:id="@+id/navigation_messages"
+        android:name="com.example.tradeupsprojecy.MessagesFragment"
+        android:label="Messages" />
+
+    <fragment
+        android:id="@+id/navigation_profile"
+        android:name="com.example.tradeupsprojecy.ProfileFragment"
+        android:label="Profile" />
+
+</navigation>
