@@ -119,4 +119,7 @@
     <string name="good">Good</string>
     <string name="fair">Fair</string>
     <string name="poor">Poor</string>
+
+
+    <string name="default_web_client_id">YOUR_GOOGLE_WEB_CLIENT_ID</string>
 </resources>
