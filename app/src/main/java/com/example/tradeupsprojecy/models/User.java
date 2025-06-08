@@ -1,5 +1,4 @@
-package com.example.tradeupsprojecy;
-
+package com.example.tradeupsprojecy.models;
 
 public class User {
     private Long id;

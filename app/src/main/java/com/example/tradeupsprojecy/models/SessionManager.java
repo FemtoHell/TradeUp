@@ -1,4 +1,5 @@
-// SessionManager.java
+package com.example.tradeupsprojecy.models;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import androidx.security.crypto.EncryptedSharedPreferences;

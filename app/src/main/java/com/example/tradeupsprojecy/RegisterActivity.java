@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import com.google.android.gms.auth.api.signin.*;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
 import com.example.tradeupsprojecy.models.*;
 import com.example.tradeupsprojecy.network.*;
@@ -19,12 +21,14 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class LoginActivity extends AppCompatActivity {
+public class RegisterActivity extends AppCompatActivity {
     private static final int RC_SIGN_IN = 9001;
 
-    private TextInputEditText emailEditText, passwordEditText;
-    private MaterialButton loginButton, googleSignInButton;
-    private TextView signUpTextView, forgotPasswordTextView;
+    private TextInputEditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
+    private MaterialCheckBox termsCheckBox;
+    private MaterialButton registerButton, googleSignUpButton;
+    private TextView loginTextView;
+    private ImageView backButton;
 
     private SessionManager sessionManager;
     private GoogleSignInClient googleSignInClient;
@@ -33,28 +37,26 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_login);
+        setContentView(R.layout.activity_register);
 
         initViews();
         initServices();
         setupGoogleSignIn();
         setupListeners();
-
-        // Check if already logged in
-        if (sessionManager.isLoggedIn()) {
-            navigateToMain();
-        }
     }
 
     private void initViews() {
+        nameEditText = findViewById(R.id.nameEditText);
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
-        loginButton = findViewById(R.id.loginButton);
-        googleSignInButton = findViewById(R.id.googleSignInButton);
-        signUpTextView = findViewById(R.id.signUpTextView);
-        forgotPasswordTextView = findViewById(R.id.forgotPasswordTextView);
+        confirmPasswordEditText = findViewById(R.id.confirmPasswordEditText);
+        termsCheckBox = findViewById(R.id.termsCheckBox);
+        registerButton = findViewById(R.id.registerButton);
+        googleSignUpButton = findViewById(R.id.googleSignUpButton);
+        loginTextView = findViewById(R.id.loginTextView);
+        backButton = findViewById(R.id.backButton);
 
-        // Enable login button when both fields are filled
+        // Enable register button when all conditions are met
         TextWatcher textWatcher = new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -68,8 +70,11 @@ public class LoginActivity extends AppCompatActivity {
             public void afterTextChanged(Editable s) {}
         };
 
+        nameEditText.addTextChangedListener(textWatcher);
         emailEditText.addTextChangedListener(textWatcher);
         passwordEditText.addTextChangedListener(textWatcher);
+        confirmPasswordEditText.addTextChangedListener(textWatcher);
+        termsCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> validateForm());
     }
 
     private void initServices() {
@@ -87,34 +92,42 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        loginButton.setOnClickListener(v -> performLogin());
-        googleSignInButton.setOnClickListener(v -> signInWithGoogle());
-        signUpTextView.setOnClickListener(v -> navigateToRegister());
-        forgotPasswordTextView.setOnClickListener(v -> handleForgotPassword());
+        backButton.setOnClickListener(v -> finish());
+        registerButton.setOnClickListener(v -> performRegister());
+        googleSignUpButton.setOnClickListener(v -> signUpWithGoogle());
+        loginTextView.setOnClickListener(v -> finish());
     }
 
     private void validateForm() {
+        String name = nameEditText.getText().toString().trim();
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
+        String confirmPassword = confirmPasswordEditText.getText().toString().trim();
 
-        boolean isValid = !email.isEmpty() &&
+        boolean isValid = !name.isEmpty() &&
+                !email.isEmpty() &&
                 android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() &&
                 !password.isEmpty() &&
-                password.length() >= 6;
+                password.length() >= 8 &&
+                !confirmPassword.isEmpty() &&
+                password.equals(confirmPassword) &&
+                termsCheckBox.isChecked();
 
-        loginButton.setEnabled(isValid);
+        registerButton.setEnabled(isValid);
     }
 
-    private void performLogin() {
+    private void performRegister() {
+        String name = nameEditText.getText().toString().trim();
         String email = emailEditText.getText().toString().trim();
         String password = passwordEditText.getText().toString().trim();
+        String confirmPassword = confirmPasswordEditText.getText().toString().trim();
 
-        if (!validateInputs(email, password)) return;
+        if (!validateInputs(name, email, password, confirmPassword)) return;
 
         setLoading(true);
-        AuthRequest request = new AuthRequest(email, password);
+        AuthRequest request = new AuthRequest(email, password, name);
 
-        apiService.login(request).enqueue(new Callback<AuthResponse>() {
+        apiService.register(request).enqueue(new Callback<AuthResponse>() {
             @Override
             public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                 setLoading(false);
@@ -129,13 +142,13 @@ public class LoginActivity extends AppCompatActivity {
                                 authResponse.getUser().getFullName()
                         );
 
-                        showMessage("Login successful!");
+                        showMessage("Registration successful!");
                         navigateToMain();
                     } else {
                         showMessage(authResponse.getMessage());
                     }
                 } else {
-                    showMessage("Login failed. Please try again.");
+                    showMessage("Registration failed. Please try again.");
                 }
             }
 
@@ -147,7 +160,7 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private void signInWithGoogle() {
+    private void signUpWithGoogle() {
         Intent signInIntent = googleSignInClient.getSignInIntent();
         startActivityForResult(signInIntent, RC_SIGN_IN);
     }
@@ -160,14 +173,14 @@ public class LoginActivity extends AppCompatActivity {
             Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
             try {
                 GoogleSignInAccount account = task.getResult(ApiException.class);
-                handleGoogleSignInSuccess(account);
+                handleGoogleSignUpSuccess(account);
             } catch (ApiException e) {
-                showMessage("Google sign in failed: " + e.getMessage());
+                showMessage("Google sign up failed: " + e.getMessage());
             }
         }
     }
 
-    private void handleGoogleSignInSuccess(GoogleSignInAccount account) {
+    private void handleGoogleSignUpSuccess(GoogleSignInAccount account) {
         setLoading(true);
 
         GoogleAuthRequest request = new GoogleAuthRequest();
@@ -192,13 +205,13 @@ public class LoginActivity extends AppCompatActivity {
                                 authResponse.getUser().getFullName()
                         );
 
-                        showMessage("Google login successful!");
+                        showMessage("Google sign up successful!");
                         navigateToMain();
                     } else {
                         showMessage(authResponse.getMessage());
                     }
                 } else {
-                    showMessage("Google login failed. Please try again.");
+                    showMessage("Google sign up failed. Please try again.");
                 }
             }
 
@@ -210,7 +223,12 @@ public class LoginActivity extends AppCompatActivity {
         });
     }
 
-    private boolean validateInputs(String email, String password) {
+    private boolean validateInputs(String name, String email, String password, String confirmPassword) {
+        if (name.isEmpty()) {
+            nameEditText.setError("Name is required");
+            return false;
+        }
+
         if (email.isEmpty()) {
             emailEditText.setError("Email is required");
             return false;
@@ -226,8 +244,18 @@ public class LoginActivity extends AppCompatActivity {
             return false;
         }
 
-        if (password.length() < 6) {
-            passwordEditText.setError("Password must be at least 6 characters");
+        if (password.length() < 8) {
+            passwordEditText.setError("Password must be at least 8 characters");
+            return false;
+        }
+
+        if (!password.equals(confirmPassword)) {
+            confirmPasswordEditText.setError("Passwords don't match");
+            return false;
+        }
+
+        if (!termsCheckBox.isChecked()) {
+            showMessage("Please accept the terms and conditions");
             return false;
         }
 
@@ -235,8 +263,8 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void setLoading(boolean loading) {
-        loginButton.setEnabled(!loading);
-        googleSignInButton.setEnabled(!loading);
+        registerButton.setEnabled(!loading);
+        googleSignUpButton.setEnabled(!loading);
     }
 
     private void showMessage(String message) {
@@ -244,18 +272,9 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void navigateToMain() {
-        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+        Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
-    }
-
-    private void navigateToRegister() {
-        Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
-        startActivity(intent);
-    }
-
-    private void handleForgotPassword() {
-        showMessage("Forgot password feature coming soon!");
     }
 }
