@@ -7,31 +7,31 @@
 
     <fragment
         android:id="@+id/navigation_home"
-        android:name="com.example.tradeupsprojecy.HomeFragment"
+        android:name="com.example.tradeupsprojecy.ui.fragments.HomeFragment"
         android:label="Home"
         tools:layout="@layout/fragment_home" />
 
     <fragment
         android:id="@+id/navigation_search"
-        android:name="com.example.tradeupsprojecy.SearchFragment"
+        android:name="com.example.tradeupsprojecy.ui.fragments.SearchFragment"
         android:label="Search"
         tools:layout="@layout/fragment_search" />
 
     <fragment
         android:id="@+id/navigation_add"
-        android:name="com.example.tradeupsprojecy.AddListingFragment"
+        android:name="com.example.tradeupsprojecy.ui.fragments.AddListingFragment"
         android:label="Sell"
         tools:layout="@layout/fragment_add_listing" />
 
     <fragment
         android:id="@+id/navigation_messages"
-        android:name="com.example.tradeupsprojecy.MessagesFragment"
+        android:name="com.example.tradeupsprojecy.ui.fragments.MessagesFragment"
         android:label="Messages"
         tools:layout="@layout/fragment_messages" />
 
     <fragment
         android:id="@+id/navigation_profile"
-        android:name="com.example.tradeupsprojecy.ProfileFragment"
+        android:name="com.example.tradeupsprojecy.ui.fragments.ProfileFragment"
         android:label="Profile"
         tools:layout="@layout/fragment_profile" />
 

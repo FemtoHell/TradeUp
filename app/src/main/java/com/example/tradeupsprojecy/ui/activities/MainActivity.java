@@ -1,4 +1,4 @@
-package com.example.tradeupsprojecy;
+package com.example.tradeupsprojecy.ui.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,8 +8,15 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+
+import com.example.tradeupsprojecy.ui.fragments.AddListingFragment;
+import com.example.tradeupsprojecy.ui.fragments.HomeFragment;
+import com.example.tradeupsprojecy.ui.fragments.MessagesFragment;
+import com.example.tradeupsprojecy.ui.fragments.ProfileFragment;
+import com.example.tradeupsprojecy.R;
+import com.example.tradeupsprojecy.ui.fragments.SearchFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.example.tradeupsprojecy.utils.SessionManager;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -58,21 +65,22 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
 
-            if (item.getItemId() == R.id.navigation_home) {
+            int itemId = item.getItemId();
+
+            if (itemId == R.id.navigation_home) {
                 selectedFragment = new HomeFragment();
-            } else if (item.getItemId() == R.id.navigation_search) {
+            } else if (itemId == R.id.navigation_search) {
                 selectedFragment = new SearchFragment();
-            } else if (item.getItemId() == R.id.navigation_add_listing) {
+            } else if (itemId == R.id.navigation_sell) { // Đảm bảo ID này đúng
                 selectedFragment = new AddListingFragment();
-            } else if (item.getItemId() == R.id.navigation_messages) {
+            } else if (itemId == R.id.navigation_messages) {
                 selectedFragment = new MessagesFragment();
-            } else if (item.getItemId() == R.id.navigation_profile) {
+            } else if (itemId == R.id.navigation_profile) {
                 selectedFragment = new ProfileFragment();
             }
 
             if (selectedFragment != null) {
-                loadFragment(selectedFragment);
-                return true;
+                return loadFragment(selectedFragment);
             }
             return false;
         });
@@ -81,11 +89,17 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setSelectedItemId(R.id.navigation_home);
     }
 
-    private void loadFragment(Fragment fragment) {
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.fragmentContainer, fragment)
-                .commit();
+    private boolean loadFragment(Fragment fragment) {
+        try {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainer, fragment)
+                    .commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     private void navigateToLogin() {
@@ -135,6 +149,9 @@ public class MainActivity extends AppCompatActivity {
         // Navigate to login
         navigateToLogin();
     }
+    public void navigateToSearch() {
+        bottomNavigationView.setSelectedItemId(R.id.navigation_search);
+    }
 
     @Override
     public void onBackPressed() {
@@ -150,3 +167,4 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 }
+

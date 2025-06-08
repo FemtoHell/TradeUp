@@ -1,11 +1,13 @@
-package com.example.tradeupsprojecy;
+package com.example.tradeupsprojecy.ui.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import androidx.appcompat.app.AppCompatActivity;
-import com.example.tradeupsprojecy.utils.SessionManager;
+
+import com.example.tradeupsprojecy.R;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 
 public class SplashActivity extends AppCompatActivity {
     private static final int SPLASH_DELAY = 2000; // 2 seconds

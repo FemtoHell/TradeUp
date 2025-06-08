@@ -1,4 +1,4 @@
-package com.example.tradeupsprojecy.utils;
+package com.example.tradeupsprojecy.data.local;
 
 import android.content.Context;
 import android.content.SharedPreferences;

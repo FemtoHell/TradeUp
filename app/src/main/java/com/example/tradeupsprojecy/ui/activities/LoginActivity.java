@@ -1,4 +1,4 @@
-package com.example.tradeupsprojecy;
+package com.example.tradeupsprojecy.ui.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,14 +8,19 @@ import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.tradeupsprojecy.R;
+import com.example.tradeupsprojecy.data.models.AuthRequest;
+import com.example.tradeupsprojecy.data.models.AuthResponse;
+import com.example.tradeupsprojecy.data.models.GoogleAuthRequest;
+import com.example.tradeupsprojecy.data.network.ApiService;
+import com.example.tradeupsprojecy.data.network.NetworkClient;
 import com.google.android.gms.auth.api.signin.*;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.example.tradeupsprojecy.models.*;
-import com.example.tradeupsprojecy.network.*;
-import com.example.tradeupsprojecy.utils.SessionManager;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;

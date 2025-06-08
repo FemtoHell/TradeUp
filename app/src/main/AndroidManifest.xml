@@ -31,7 +31,7 @@
 
         <!-- Splash Activity -->
         <activity
-            android:name=".SplashActivity"
+            android:name=".ui.activities.SplashActivity"
             android:exported="true"
             android:theme="@style/SplashTheme">
             <intent-filter>
@@ -42,19 +42,19 @@
 
         <!-- Login Activity -->
         <activity
-            android:name=".LoginActivity"
+            android:name=".ui.activities.LoginActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- Register Activity -->
         <activity
-            android:name=".RegisterActivity"
+            android:name=".ui.activities.RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- Main Activity -->
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.activities.MainActivity"
             android:exported="false" />
 
         <!-- Google Services Meta Data -->

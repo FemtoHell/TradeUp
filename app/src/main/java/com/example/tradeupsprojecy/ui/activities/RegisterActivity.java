@@ -1,4 +1,4 @@
-package com.example.tradeupsprojecy;
+package com.example.tradeupsprojecy.ui.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,12 +9,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.tradeupsprojecy.R;
+import com.example.tradeupsprojecy.data.network.ApiService;
+import com.example.tradeupsprojecy.data.network.NetworkClient;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
-import com.example.tradeupsprojecy.models.*;
-import com.example.tradeupsprojecy.network.*;
-import com.example.tradeupsprojecy.utils.SessionManager;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 
 public class RegisterActivity extends AppCompatActivity {
 

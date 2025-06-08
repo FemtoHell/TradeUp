@@ -1,6 +1,10 @@
-package com.example.tradeupsprojecy.network;
+package com.example.tradeupsprojecy.data.network;
 
-import com.example.tradeupsprojecy.models.*;
+import com.example.tradeupsprojecy.data.models.AuthRequest;
+import com.example.tradeupsprojecy.data.models.AuthResponse;
+import com.example.tradeupsprojecy.data.models.GoogleAuthRequest;
+import com.example.tradeupsprojecy.data.models.User;
+
 import retrofit2.Call;
 import retrofit2.http.*;
 
