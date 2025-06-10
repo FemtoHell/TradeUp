@@ -16,8 +16,9 @@ import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.ui.activities.MainActivity;
 import com.example.tradeupsprojecy.data.api.ApiClient;
 import com.example.tradeupsprojecy.data.api.ApiService;
-import com.example.tradeupsprojecy.data.models.entities.Category;
-import com.example.tradeupsprojecy.data.models.entities.Item;
+// ✅ FIXED: Đúng imports này
+import com.example.tradeupsprojecy.data.entities.Category;
+import com.example.tradeupsprojecy.data.entities.Item;
 import com.example.tradeupsprojecy.data.models.response.ApiResponse;
 import com.example.tradeupsprojecy.ui.adapters.CategoryAdapter;
 import com.example.tradeupsprojecy.ui.adapters.ListingAdapter;
@@ -92,7 +93,10 @@ public class HomeFragment extends Fragment {
 
             categoryAdapter.setOnCategoryClickListener((category, position) -> {
                 Log.d(TAG, "Category clicked: " + category.getName());
-                // TODO: Navigate to category items
+                // ✅ FIXED: Navigate to search with category filter
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToSearch(category.getName());
+                }
             });
         }
 
@@ -142,7 +146,9 @@ public class HomeFragment extends Fragment {
                     ApiResponse<List<Category>> apiResponse = response.body();
                     if (apiResponse.isSuccess() && apiResponse.getData() != null) {
                         Log.d(TAG, "Categories loaded: " + apiResponse.getData().size());
-                        categoryAdapter.setCategories(apiResponse.getData());
+                        if (categoryAdapter != null) {
+                            categoryAdapter.setCategories(apiResponse.getData());
+                        }
                     } else {
                         Log.e(TAG, "Categories API error: " + apiResponse.getMessage());
                     }
@@ -170,9 +176,13 @@ public class HomeFragment extends Fragment {
                         List<Item> items = apiResponse.getData();
                         Log.d(TAG, "Items loaded: " + items.size());
 
-                        // Update both featured and recent adapters
-                        featuredAdapter.updateItems(items);
-                        recentAdapter.updateItems(items);
+                        // ✅ FIXED: Update adapters safely
+                        if (featuredAdapter != null) {
+                            featuredAdapter.updateItems(items);
+                        }
+                        if (recentAdapter != null) {
+                            recentAdapter.updateItems(items);
+                        }
                     } else {
                         Log.e(TAG, "Items API error: " + apiResponse.getMessage());
                     }

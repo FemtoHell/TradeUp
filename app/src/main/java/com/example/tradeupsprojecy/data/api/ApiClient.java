@@ -1,7 +1,7 @@
 // app/src/main/java/com/example/tradeupsprojecy/data/api/ApiClient.java
 package com.example.tradeupsprojecy.data.api;
 
-import com.example.tradeupsprojecy.utils.Constants; // ✅ Thêm import này
+import com.example.tradeupsprojecy.utils.Constants;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import retrofit2.Retrofit;
@@ -42,7 +42,7 @@ public class ApiClient {
                     .create();
 
             retrofit = new Retrofit.Builder()
-                    .baseUrl(Constants.BASE_URL) // ✅ Sử dụng Constants
+                    .baseUrl(Constants.BASE_URL)
                     .client(client)
                     .addConverterFactory(GsonConverterFactory.create(gson))
                     .build();

@@ -2,8 +2,6 @@
 package com.example.tradeupsprojecy.ui.fragments;
 
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.api.ApiClient;
 import com.example.tradeupsprojecy.data.api.ApiService;
-import com.example.tradeupsprojecy.data.models.entities.Item;
+import com.example.tradeupsprojecy.data.entities.Item;
 import com.example.tradeupsprojecy.data.models.response.ApiResponse;
 import com.example.tradeupsprojecy.ui.adapters.ListingAdapter;
 import com.example.tradeupsprojecy.ui.activities.MainActivity;
@@ -180,6 +178,7 @@ public class SearchFragment extends Fragment {
         });
     }
 
+    // ✅ FIXED: Sửa logic filter để không gọi getCategoryName() không tồn tại
     private List<Item> filterItems(List<Item> items, String query) {
         List<Item> filteredItems = new ArrayList<>();
         String lowerQuery = query.toLowerCase().trim();

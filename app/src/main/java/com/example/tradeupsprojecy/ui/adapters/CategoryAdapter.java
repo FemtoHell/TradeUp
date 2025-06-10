@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/tradeupsprojecy/ui/adapters/CategoryAdapter.java
 package com.example.tradeupsprojecy.ui.adapters;
 
 import android.content.Context;
@@ -10,7 +11,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.tradeupsprojecy.R;
-import com.example.tradeupsprojecy.data.models.Category;
+// ✅ FIXED: Sử dụng entities Category cho API calls
+import com.example.tradeupsprojecy.data.entities.Category;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,10 +113,28 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
             // Set selected state
             if (categoryContainer != null) {
                 categoryContainer.setSelected(isSelected);
-                // Change background color based on selection
-                categoryContainer.setBackgroundColor(isSelected ?
-                        context.getResources().getColor(android.R.color.holo_blue_light) :
-                        context.getResources().getColor(android.R.color.transparent));
+                try {
+                    if (isSelected) {
+                        categoryContainer.setBackgroundColor(
+                                context.getResources().getColor(android.R.color.holo_blue_light, null)
+                        );
+                    } else {
+                        categoryContainer.setBackgroundColor(
+                                context.getResources().getColor(android.R.color.transparent, null)
+                        );
+                    }
+                } catch (Exception e) {
+                    // Fallback for older Android versions
+                    if (isSelected) {
+                        categoryContainer.setBackgroundColor(
+                                context.getResources().getColor(android.R.color.holo_blue_light)
+                        );
+                    } else {
+                        categoryContainer.setBackgroundColor(
+                                context.getResources().getColor(android.R.color.transparent)
+                        );
+                    }
+                }
             }
 
             // Load category icon
@@ -123,14 +143,13 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
                     try {
                         Glide.with(context)
                                 .load(category.getIconUrl())
-                                .placeholder(android.R.drawable.ic_menu_info_details)
-                                .error(android.R.drawable.ic_menu_info_details)
+                                .placeholder(getDefaultCategoryIcon(category.getName()))
+                                .error(getDefaultCategoryIcon(category.getName()))
                                 .into(ivCategoryIcon);
                     } catch (Exception e) {
                         ivCategoryIcon.setImageResource(getDefaultCategoryIcon(category.getName()));
                     }
                 } else {
-                    // Set default icon based on category name
                     ivCategoryIcon.setImageResource(getDefaultCategoryIcon(category.getName()));
                 }
             }
@@ -139,21 +158,27 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.Catego
         private int getDefaultCategoryIcon(String categoryName) {
             if (categoryName == null) return android.R.drawable.ic_menu_info_details;
 
-            // Use system drawables as fallback
             switch (categoryName.toLowerCase()) {
                 case "điện tử":
+                case "electronics":
                     return android.R.drawable.ic_menu_call;
                 case "thời trang":
+                case "fashion":
                     return android.R.drawable.ic_menu_gallery;
                 case "xe cộ":
+                case "vehicles":
                     return android.R.drawable.ic_menu_directions;
                 case "nhà cửa":
+                case "home":
                     return android.R.drawable.ic_menu_myplaces;
                 case "sách":
+                case "books":
                     return android.R.drawable.ic_menu_agenda;
                 case "thể thao":
+                case "sports":
                     return android.R.drawable.ic_menu_compass;
                 case "sức khỏe":
+                case "health":
                     return android.R.drawable.ic_menu_help;
                 default:
                     return android.R.drawable.ic_menu_info_details;

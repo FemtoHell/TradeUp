@@ -22,6 +22,8 @@ import com.example.tradeupsprojecy.utils.GoogleSignInHelper;
 import com.example.tradeupsprojecy.utils.ValidationUtils;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
+// ✅ FIXED: Import GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;

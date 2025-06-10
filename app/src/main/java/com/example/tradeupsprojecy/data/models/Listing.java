@@ -1,8 +1,12 @@
+// app/src/main/java/com/example/tradeupsprojecy/data/models/Listing.java
 package com.example.tradeupsprojecy.data.models;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+// ✅ FIXED: Chỉ import entities User
+import com.example.tradeupsprojecy.data.models.User;
+import com.example.tradeupsprojecy.data.entities.Category;
 
 public class Listing {
     private Long id;
@@ -26,6 +30,17 @@ public class Listing {
 
     // Constructors
     public Listing() {}
+
+    public Listing(String title, String description, BigDecimal price, User user, Category category) {
+        this.title = title;
+        this.description = description;
+        this.price = price;
+        this.user = user;
+        this.category = category;
+        this.status = "ACTIVE";
+        this.viewCount = 0;
+        this.isNegotiable = false;
+    }
 
     // Getters and Setters
     public Long getId() { return id; }

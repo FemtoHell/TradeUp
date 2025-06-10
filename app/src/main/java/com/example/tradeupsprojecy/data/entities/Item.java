@@ -1,45 +1,28 @@
 // app/src/main/java/com/example/tradeupsprojecy/data/models/entities/Item.java
-package com.example.tradeupsprojecy.data.models.entities;
+package com.example.tradeupsprojecy.data.entities;
 
 import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
 public class Item {
     private Long id;
     private String title;
     private String description;
     private BigDecimal price;
-    private String condition;
-    private String status;
     private String location;
-    private String images;
-    private String tags;
-    private Boolean isNegotiable;
-    private Integer viewCount;
-    private String createdAt;
-    private String updatedAt;
-
-    // Seller information
-    private User seller;
-    private Long sellerId;
-
-    // Category information
-    private Category category;
+    private String condition;
+    private String sellerId;
+    private String sellerName;
     private Long categoryId;
+    private String categoryName;
+    private List<String> imageUrls;
+    private Date createdAt;
+    private Date updatedAt;
 
     public Item() {}
 
-    public Item(String title, String description, BigDecimal price, User seller, Category category) {
-        this.title = title;
-        this.description = description;
-        this.price = price;
-        this.seller = seller;
-        this.category = category;
-        this.status = "AVAILABLE";
-        this.viewCount = 0;
-        this.isNegotiable = false;
-    }
-
-    // Getters and setters
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -52,42 +35,30 @@ public class Item {
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
 
-    public String getCondition() { return condition; }
-    public void setCondition(String condition) { this.condition = condition; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
-    public String getImages() { return images; }
-    public void setImages(String images) { this.images = images; }
+    public String getCondition() { return condition; }
+    public void setCondition(String condition) { this.condition = condition; }
 
-    public String getTags() { return tags; }
-    public void setTags(String tags) { this.tags = tags; }
+    public String getSellerId() { return sellerId; }
+    public void setSellerId(String sellerId) { this.sellerId = sellerId; }
 
-    public Boolean getIsNegotiable() { return isNegotiable; }
-    public void setIsNegotiable(Boolean isNegotiable) { this.isNegotiable = isNegotiable; }
-
-    public Integer getViewCount() { return viewCount; }
-    public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
-
-    public String getCreatedAt() { return createdAt; }
-    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
-
-    public String getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
-
-    public User getSeller() { return seller; }
-    public void setSeller(User seller) { this.seller = seller; }
-
-    public Long getSellerId() { return sellerId; }
-    public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
-
-    public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
+    public String getSellerName() { return sellerName; }
+    public void setSellerName(String sellerName) { this.sellerName = sellerName; }
 
     public Long getCategoryId() { return categoryId; }
     public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+
+    public List<String> getImageUrls() { return imageUrls; }
+    public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
+
+    public Date getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
+
+    public Date getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Date updatedAt) { this.updatedAt = updatedAt; }
 }

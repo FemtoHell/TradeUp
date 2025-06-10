@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/tradeupsprojecy/data/models/GoogleAuthRequest.java
 package com.example.tradeupsprojecy.data.models;
 
 public class GoogleAuthRequest {
@@ -7,6 +8,13 @@ public class GoogleAuthRequest {
     private String profileImageUrl;
 
     public GoogleAuthRequest() {}
+
+    public GoogleAuthRequest(String idToken, String email, String fullName, String profileImageUrl) {
+        this.idToken = idToken;
+        this.email = email;
+        this.fullName = fullName;
+        this.profileImageUrl = profileImageUrl;
+    }
 
     // Getters and setters
     public String getIdToken() { return idToken; }

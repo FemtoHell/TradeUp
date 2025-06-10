@@ -1,14 +1,14 @@
-// app/src/main/java/com/example/tradeupsprojecy/data/repository/AuthRepository.java
+// app/src/main/java/com/example/tradeupsprojecy/data/repositories/AuthRepository.java
 package com.example.tradeupsprojecy.data.repository;
 
 import com.example.tradeupsprojecy.data.api.ApiService;
 import com.example.tradeupsprojecy.data.models.request.AuthRequest;
+import com.example.tradeupsprojecy.data.models.request.GoogleAuthRequest;
 import com.example.tradeupsprojecy.data.models.response.AuthResponse;
-
 import retrofit2.Call;
 
 public class AuthRepository {
-    private ApiService apiService;
+    private final ApiService apiService;
 
     public AuthRepository(ApiService apiService) {
         this.apiService = apiService;
@@ -22,7 +22,9 @@ public class AuthRepository {
         return apiService.register(request);
     }
 
-    public Call<AuthResponse.UserDto> getProfile(String token) {
-        return apiService.getProfile("Bearer " + token);
+    public Call<AuthResponse> googleLogin(GoogleAuthRequest request) {
+        return apiService.googleLogin(request);
     }
+
+    // Removed getProfile method since it's not defined in ApiService
 }

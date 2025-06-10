@@ -1,6 +1,8 @@
+// app/src/main/java/com/example/tradeupsprojecy/data/models/Category.java
 package com.example.tradeupsprojecy.data.models;
 
 import java.util.List;
+import com.example.tradeupsprojecy.data.models.Listing;
 
 public class Category {
     private Long id;
@@ -36,4 +38,11 @@ public class Category {
 
     public List<Listing> getListings() { return listings; }
     public void setListings(List<Listing> listings) { this.listings = listings; }
+
+    // ✅ ADDED: Methods for compatibility
+    public String getCreatedAt() { return null; }
+    public void setCreatedAt(String createdAt) { }
+
+    public String getUpdatedAt() { return null; }
+    public void setUpdatedAt(String updatedAt) { }
 }
