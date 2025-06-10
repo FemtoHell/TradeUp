@@ -1,33 +1,37 @@
+// app/src/main/java/com/example/tradeupsprojecy/ui/activities/RegisterActivity.java
 package com.example.tradeupsprojecy.ui.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.view.View;
+import android.util.Log;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.tradeupsprojecy.R;
-import com.example.tradeupsprojecy.data.network.ApiService;
-import com.example.tradeupsprojecy.data.network.NetworkClient;
+import com.example.tradeupsprojecy.data.api.ApiClient;
+import com.example.tradeupsprojecy.data.api.ApiService;
+import com.example.tradeupsprojecy.data.models.request.AuthRequest;
+import com.example.tradeupsprojecy.data.models.response.AuthResponse;
+import com.example.tradeupsprojecy.data.local.SessionManager; // ✅ ĐÚNG IMPORT
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
-import com.example.tradeupsprojecy.data.local.SessionManager;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class RegisterActivity extends AppCompatActivity {
 
     private TextInputEditText nameEditText, emailEditText, passwordEditText, confirmPasswordEditText;
+    private MaterialButton registerButton;
     private MaterialCheckBox termsCheckBox;
-    private MaterialButton registerButton, googleSignUpButton;
-    private TextView loginTextView;
     private ImageView backButton;
 
-    private SessionManager sessionManager;
     private ApiService apiService;
+    private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +40,8 @@ public class RegisterActivity extends AppCompatActivity {
 
         initViews();
         initServices();
-        setupListeners();
+        setupClickListeners();
+        setupTextWatchers();
     }
 
     private void initViews() {
@@ -44,64 +49,62 @@ public class RegisterActivity extends AppCompatActivity {
         emailEditText = findViewById(R.id.emailEditText);
         passwordEditText = findViewById(R.id.passwordEditText);
         confirmPasswordEditText = findViewById(R.id.confirmPasswordEditText);
-        termsCheckBox = findViewById(R.id.termsCheckBox);
         registerButton = findViewById(R.id.registerButton);
-        googleSignUpButton = findViewById(R.id.googleSignUpButton);
-        loginTextView = findViewById(R.id.loginTextView);
+        termsCheckBox = findViewById(R.id.termsCheckBox);
         backButton = findViewById(R.id.backButton);
+    }
 
-        // Hide Google Sign-In for now
-        googleSignUpButton.setVisibility(View.GONE);
-        findViewById(R.id.orTextView).setVisibility(View.GONE);
+    private void initServices() {
+        apiService = ApiClient.getApiService();
+        sessionManager = new SessionManager(this);
+    }
 
-        // Enable register button when all conditions are met
-        TextWatcher textWatcher = new TextWatcher() {
+    private void setupClickListeners() {
+        registerButton.setOnClickListener(v -> performRegister());
+
+        findViewById(R.id.loginTextView).setOnClickListener(v -> {
+            Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
+            startActivity(intent);
+            finish();
+        });
+
+        if (backButton != null) {
+            backButton.setOnClickListener(v -> finish());
+        }
+
+        if (termsCheckBox != null) {
+            termsCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> updateRegisterButtonState());
+        }
+    }
+
+    private void setupTextWatchers() {
+        android.text.TextWatcher textWatcher = new android.text.TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
             @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                validateForm();
-            }
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
 
             @Override
-            public void afterTextChanged(Editable s) {}
+            public void afterTextChanged(android.text.Editable s) {
+                updateRegisterButtonState();
+            }
         };
 
         nameEditText.addTextChangedListener(textWatcher);
         emailEditText.addTextChangedListener(textWatcher);
         passwordEditText.addTextChangedListener(textWatcher);
         confirmPasswordEditText.addTextChangedListener(textWatcher);
-        termsCheckBox.setOnCheckedChangeListener((buttonView, isChecked) -> validateForm());
     }
 
-    private void initServices() {
-        sessionManager = new SessionManager(this);
-        apiService = NetworkClient.getApiService();
-    }
+    private void updateRegisterButtonState() {
+        boolean isNameValid = nameEditText.getText().toString().trim().length() > 0;
+        boolean isEmailValid = emailEditText.getText().toString().trim().length() > 0;
+        boolean isPasswordValid = passwordEditText.getText().toString().trim().length() >= 8;
+        boolean isConfirmPasswordValid = confirmPasswordEditText.getText().toString().trim().equals(passwordEditText.getText().toString().trim());
+        boolean isTermsAccepted = termsCheckBox != null && termsCheckBox.isChecked();
 
-    private void setupListeners() {
-        backButton.setOnClickListener(v -> finish());
-        registerButton.setOnClickListener(v -> performRegister());
-        loginTextView.setOnClickListener(v -> finish());
-    }
-
-    private void validateForm() {
-        String name = nameEditText.getText().toString().trim();
-        String email = emailEditText.getText().toString().trim();
-        String password = passwordEditText.getText().toString().trim();
-        String confirmPassword = confirmPasswordEditText.getText().toString().trim();
-
-        boolean isValid = !name.isEmpty() &&
-                !email.isEmpty() &&
-                android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() &&
-                !password.isEmpty() &&
-                password.length() >= 8 &&
-                !confirmPassword.isEmpty() &&
-                password.equals(confirmPassword) &&
-                termsCheckBox.isChecked();
-
-        registerButton.setEnabled(isValid);
+        registerButton.setEnabled(isNameValid && isEmailValid && isPasswordValid && isConfirmPasswordValid && isTermsAccepted);
     }
 
     private void performRegister() {
@@ -114,22 +117,41 @@ public class RegisterActivity extends AppCompatActivity {
 
         setLoading(true);
 
-        // For demo purposes, simulate successful registration
-        simulateRegistration(name, email, password);
-    }
+        AuthRequest request = new AuthRequest(email, password, name);
 
-    private void simulateRegistration(String name, String email, String password) {
-        // Simulate network delay
-        registerButton.postDelayed(() -> {
-            setLoading(false);
+        apiService.register(request).enqueue(new Callback<AuthResponse>() {
+            @Override
+            public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                setLoading(false);
 
-            // Save demo session
-            sessionManager.saveAuthToken("demo_token_123");
-            sessionManager.saveUserDetails(email, name);
+                if (response.isSuccessful() && response.body() != null) {
+                    AuthResponse authResponse = response.body();
+                    if (authResponse.isSuccess()) {
+                        AuthResponse.UserDto user = authResponse.getUser();
+                        sessionManager.createLoginSession(
+                                String.valueOf(user.getId()),
+                                authResponse.getToken(),
+                                user.getEmail(),
+                                user.getFullName()
+                        );
 
-            showMessage("Registration successful!");
-            navigateToMain();
-        }, 1500);
+                        showMessage("Registration successful!");
+                        navigateToMain();
+                    } else {
+                        showMessage(authResponse.getMessage());
+                    }
+                } else {
+                    showMessage("Registration failed. Please try again.");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<AuthResponse> call, Throwable t) {
+                setLoading(false);
+                showMessage("Network error: " + t.getMessage());
+                Log.e("RegisterActivity", "Registration error", t);
+            }
+        });
     }
 
     private boolean validateInputs(String name, String email, String password, String confirmPassword) {
@@ -143,28 +165,13 @@ public class RegisterActivity extends AppCompatActivity {
             return false;
         }
 
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailEditText.setError("Please enter a valid email");
-            return false;
-        }
-
-        if (password.isEmpty()) {
-            passwordEditText.setError("Password is required");
-            return false;
-        }
-
         if (password.length() < 8) {
             passwordEditText.setError("Password must be at least 8 characters");
             return false;
         }
 
         if (!password.equals(confirmPassword)) {
-            confirmPasswordEditText.setError("Passwords don't match");
-            return false;
-        }
-
-        if (!termsCheckBox.isChecked()) {
-            showMessage("Please accept the terms and conditions");
+            confirmPasswordEditText.setError("Passwords do not match");
             return false;
         }
 
@@ -173,7 +180,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     private void setLoading(boolean loading) {
         registerButton.setEnabled(!loading);
-        registerButton.setText(loading ? "Creating account..." : "Sign Up");
+        registerButton.setText(loading ? "Creating Account..." : "Sign Up");
     }
 
     private void showMessage(String message) {

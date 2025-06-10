@@ -1,59 +1,39 @@
+// app/src/main/java/com/example/tradeupsprojecy/ui/fragments/SearchFragment.java
 package com.example.tradeupsprojecy.ui.fragments;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.Toast;
-import androidx.appcompat.widget.SearchView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.tradeupsprojecy.R;
 
 public class SearchFragment extends Fragment {
 
-    private SearchView searchView;
-    private ImageView filterButton;
-
+    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_search, container, false);
 
-        initViews(view);
-        setupClickListeners();
+        // Handle search query if passed from HomeFragment
+        Bundle args = getArguments();
+        if (args != null) {
+            String searchQuery = args.getString("search_query");
+            if (searchQuery != null) {
+                // TODO: Set search query to search view
+            }
+        }
 
         return view;
     }
 
-    private void initViews(View view) {
-        searchView = view.findViewById(R.id.searchView);
-        filterButton = view.findViewById(R.id.filterButton);
-    }
-
-    private void setupClickListeners() {
-        if (filterButton != null) {
-            filterButton.setOnClickListener(v ->
-                    showMessage("Filter feature coming soon!"));
-        }
-
-        if (searchView != null) {
-            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                @Override
-                public boolean onQueryTextSubmit(String query) {
-                    showMessage("Searching for: " + query);
-                    return true;
-                }
-
-                @Override
-                public boolean onQueryTextChange(String newText) {
-                    return false;
-                }
-            });
-        }
-    }
-
-    private void showMessage(String message) {
-        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // Initialize search functionality here
     }
 }

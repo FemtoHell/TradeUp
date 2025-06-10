@@ -1,4 +1,5 @@
-package com.example.tradeupsprojecy.data.models;
+// app/src/main/java/com/example/tradeupsprojecy/data/models/response/AuthResponse.java
+package com.example.tradeupsprojecy.data.models.response;
 
 public class AuthResponse {
     private boolean success;
@@ -21,7 +22,6 @@ public class AuthResponse {
     public UserDto getUser() { return user; }
     public void setUser(UserDto user) { this.user = user; }
 
-    // Inner class for User DTO
     public static class UserDto {
         private Long id;
         private String fullName;

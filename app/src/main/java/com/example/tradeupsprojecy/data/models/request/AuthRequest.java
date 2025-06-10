@@ -1,4 +1,5 @@
-package com.example.tradeupsprojecy.data.models;
+// app/src/main/java/com/example/tradeupsprojecy/data/models/request/AuthRequest.java
+package com.example.tradeupsprojecy.data.models.request;
 
 public class AuthRequest {
     private String email;
