@@ -3,24 +3,29 @@ package com.example.tradeupsprojecy.ui.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.ui.activities.LoginActivity;
 import com.example.tradeupsprojecy.data.local.SessionManager;
+import com.example.tradeupsprojecy.utils.GoogleSignInHelper;
 
 public class ProfileFragment extends Fragment {
 
+    private static final String TAG = "ProfileFragment";
+
     private SessionManager sessionManager;
-    private TextView userNameTextView, userEmailTextView;
+    private GoogleSignInHelper googleSignInHelper;
+
+    private TextView userNameTextView;
+    private TextView userEmailTextView;
     private LinearLayout logoutLayout;
 
     @Nullable
@@ -47,6 +52,7 @@ public class ProfileFragment extends Fragment {
 
     private void initServices() {
         sessionManager = new SessionManager(requireContext());
+        googleSignInHelper = new GoogleSignInHelper(requireContext());
     }
 
     private void setupClickListeners() {
@@ -71,9 +77,20 @@ public class ProfileFragment extends Fragment {
     }
 
     private void logout() {
+        Log.d(TAG, "Logging out user");
+
+        // Sign out from Google if signed in
+        if (googleSignInHelper.isSignedIn()) {
+            googleSignInHelper.signOut(() -> {
+                Log.d(TAG, "Google sign-out completed");
+            });
+        }
+
+        // Clear session
         sessionManager.logout();
 
-        Intent intent = new Intent(getActivity(), LoginActivity.class);
+        // Navigate to login
+        Intent intent = new Intent(requireActivity(), LoginActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
 

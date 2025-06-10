@@ -47,6 +47,9 @@ dependencies {
     implementation("androidx.activity:activity:1.9.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
+
+
+
     // ✅ Thêm Fragment support
     implementation("androidx.fragment:fragment:1.8.1")
 
