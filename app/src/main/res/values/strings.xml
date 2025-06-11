@@ -1,9 +1,11 @@
 <!-- app/src/main/res/values/strings.xml -->
 <resources>
-    <string name="app_name">TradeUps</string>
+
 
     <!-- Google Web Client ID - BẠN CẦN LẤY TỪ GOOGLE CLOUD CONSOLE -->
-    <string name="default_web_client_id">YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com</string>
+    <string name="app_name">TradeUp</string>
+    <!-- Replace with your actual Web Client ID from Google Console -->
+    <string name="default_web_client_id">197776863490-0j3eukit867ircvr4nbddjrurf7c2gr0.apps.googleusercontent.com</string>
 
     <!-- Navigation -->
     <string name="home">Home</string>

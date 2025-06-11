@@ -290,6 +290,7 @@ public class LoginActivity extends AppCompatActivity {
         Log.d(TAG, "Performing Google login with backend");
         Log.d(TAG, "Google email: " + request.getEmail());
         Log.d(TAG, "Google name: " + request.getFullName());
+        Log.d(TAG, "ID Token present: " + (request.getIdToken() != null && !request.getIdToken().isEmpty()));
 
         apiService.googleLogin(request).enqueue(new Callback<AuthResponse>() {
             @Override

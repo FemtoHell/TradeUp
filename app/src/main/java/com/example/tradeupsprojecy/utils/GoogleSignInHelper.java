@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/tradeupsprojecy/utils/GoogleSignInHelper.java
 package com.example.tradeupsprojecy.utils;
 
 import android.content.Context;
@@ -10,6 +9,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.example.tradeupsprojecy.R;
 
 public class GoogleSignInHelper {
@@ -26,19 +26,25 @@ public class GoogleSignInHelper {
         void onComplete();
     }
 
+    // ✅ SINGLE Constructor
     public GoogleSignInHelper(Context context) {
         this.context = context;
-        Log.d(TAG, "Initializing Google Sign-In");
+        Log.d(TAG, "=== GOOGLE CLOUD CONSOLE SETUP ===");
+
+        // ✅ Web Client ID for ID Token
+        String webClientId = context.getString(R.string.default_web_client_id);
+        Log.d(TAG, "Web Client ID: " + webClientId);
+        Log.d(TAG, "Package: " + context.getPackageName());
+        Log.d(TAG, "Expected SHA-1: 6D:8B:41:49:34:29:AE:BD:1E:B3:71:DE:3B:56:75:D8:4D:22:E7:53");
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(context.getString(R.string.default_web_client_id))
+                .requestIdToken(webClientId)  // ✅ Web Client ID
                 .requestEmail()
                 .requestProfile()
                 .build();
 
         googleSignInClient = GoogleSignIn.getClient(context, gso);
-
-        Log.d(TAG, "Google Sign-In client created successfully");
+        Log.d(TAG, "✅ Complete Google Cloud Console setup");
     }
 
     public Intent getSignInIntent() {
@@ -47,61 +53,62 @@ public class GoogleSignInHelper {
     }
 
     public void handleSignInResult(ActivityResult result, GoogleSignInCallback callback) {
-        Log.d(TAG, "Handling sign-in result");
+        Log.d(TAG, "=== GOOGLE SIGN IN DEBUG ===");
         Log.d(TAG, "Result code: " + result.getResultCode());
+        Log.d(TAG, "Web Client ID: " + context.getString(R.string.default_web_client_id));
 
         try {
-            GoogleSignInAccount account = GoogleSignIn.getSignedInAccountFromIntent(result.getData())
-                    .getResult(ApiException.class);
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(result.getData());
+            GoogleSignInAccount account = task.getResult(ApiException.class);
 
-            Log.d(TAG, "Sign-in successful");
-            if (account != null) {
-                Log.d(TAG, "Account email: " + account.getEmail());
-                Log.d(TAG, "Account name: " + account.getDisplayName());
-                Log.d(TAG, "Account ID: " + account.getId());
-            }
+            Log.d(TAG, "🎉 GOOGLE SIGN-IN SUCCESS!");
+            Log.d(TAG, "Name: " + account.getDisplayName());
+            Log.d(TAG, "Email: " + account.getEmail());
+            Log.d(TAG, "Photo: " + account.getPhotoUrl());
+            Log.d(TAG, "ID Token present: " + (account.getIdToken() != null));
 
-            if (account != null && account.getEmail() != null) {
-                callback.onResult(true, "Google Sign-In successful", account);
-            } else {
-                Log.e(TAG, "Account or email is null");
-                callback.onResult(false, "Failed to get Google account information", null);
-            }
+            // ✅ Success callback
+            callback.onResult(true, "Sign-in successful", account);
 
         } catch (ApiException e) {
-            Log.e(TAG, "ApiException: " + e.getStatusCode() + " - " + e.getMessage());
+            Log.e(TAG, "❌ GOOGLE SIGN IN FAILED!");
+            Log.e(TAG, "Status Code: " + e.getStatusCode());
+            Log.e(TAG, "Status Message: " + e.getStatusMessage());
+            Log.e(TAG, "Error Details: " + e.toString());
 
             String errorMessage;
             switch (e.getStatusCode()) {
-                case 12501:
-                    errorMessage = "Sign-in was cancelled";
-                    break;
-                case 12502:
-                    errorMessage = "Sign-in is currently in progress";
+                case 10:
+                    errorMessage = "DEVELOPER_ERROR - Check SHA-1, package name, and client ID";
+                    Log.e(TAG, "❌ Configuration issue detected!");
+                    Log.e(TAG, "- Verify SHA-1 fingerprint matches debug keystore");
+                    Log.e(TAG, "- Verify package name: com.example.tradeupsprojecy");
+                    Log.e(TAG, "- Verify Web Client ID in strings.xml");
                     break;
                 case 12500:
                     errorMessage = "Sign-in configuration error";
                     break;
+                case 12501:
+                    errorMessage = "Sign-in was cancelled by user";
+                    break;
+                case 12502:
+                    errorMessage = "Sign-in is currently in progress";
+                    break;
                 case 7:
-                    errorMessage = "Network error. Please check your internet connection";
+                    errorMessage = "Network error - Check internet connection";
                     break;
                 default:
                     errorMessage = "Google Sign-In failed: " + e.getMessage();
                     break;
             }
 
+            Log.e(TAG, "Final error message: " + errorMessage);
             callback.onResult(false, errorMessage, null);
-
-        } catch (Exception e) {
-            Log.e(TAG, "Unexpected error: " + e.getMessage());
-            e.printStackTrace();
-            callback.onResult(false, "Unexpected error: " + e.getMessage(), null);
         }
     }
 
     public void signOut(SimpleCallback callback) {
         Log.d(TAG, "Signing out from Google");
-
         googleSignInClient.signOut()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
@@ -122,7 +129,6 @@ public class GoogleSignInHelper {
 
     public void revokeAccess(SimpleCallback callback) {
         Log.d(TAG, "Revoking Google access");
-
         googleSignInClient.revokeAccess()
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
