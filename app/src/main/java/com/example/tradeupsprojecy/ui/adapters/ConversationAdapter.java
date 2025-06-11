@@ -1,7 +1,6 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/adapters/ConversationAdapter.java
+// ConversationAdapter.java
 package com.example.tradeupsprojecy.ui.adapters;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,15 +11,16 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.example.tradeupsprojecy.R;
-import com.example.tradeupsprojecy.data.entities.Conversation;
+import com.example.tradeupsprojecy.data.models.Conversation;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapter.ConversationViewHolder> {
 
-    private final Context context;
     private List<Conversation> conversations;
     private OnConversationClickListener onConversationClickListener;
 
@@ -28,9 +28,9 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         void onConversationClick(Conversation conversation);
     }
 
-    public ConversationAdapter(Context context, List<Conversation> conversations) {
-        this.context = context;
+    public ConversationAdapter(List<Conversation> conversations, OnConversationClickListener listener) {
         this.conversations = conversations;
+        this.onConversationClickListener = listener;
     }
 
     public void setOnConversationClickListener(OnConversationClickListener listener) {
@@ -45,7 +45,7 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
     @NonNull
     @Override
     public ConversationViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_conversation, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_conversation, parent, false);
         return new ConversationViewHolder(view);
     }
 
@@ -54,9 +54,9 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         Conversation conversation = conversations.get(position);
 
         // User avatar
-        if (conversation.getOtherUserAvatarUrl() != null && !conversation.getOtherUserAvatarUrl().isEmpty()) {
-            Glide.with(context)
-                    .load(conversation.getOtherUserAvatarUrl())
+        if (conversation.getOtherUserAvatar() != null && !conversation.getOtherUserAvatar().isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(conversation.getOtherUserAvatar())
                     .transform(new CircleCrop())
                     .placeholder(R.drawable.ic_person_placeholder)
                     .into(holder.avatarImageView);
@@ -69,8 +69,8 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
                 conversation.getOtherUserName() : "Unknown User");
 
         // Item title
-        holder.itemTitleTextView.setText(conversation.getItemTitle() != null ?
-                conversation.getItemTitle() : "Unknown Item");
+        holder.itemTitleTextView.setText(conversation.getListingTitle() != null ?
+                conversation.getListingTitle() : "Unknown Item");
 
         // Last message
         holder.lastMessageTextView.setText(conversation.getLastMessage() != null ?
@@ -85,8 +85,11 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         }
 
         // Unread indicator
-        if (conversation.hasUnreadMessages()) {
+        if (conversation.getUnreadCount() != null && conversation.getUnreadCount() > 0) {
             holder.unreadIndicator.setVisibility(View.VISIBLE);
+            if (holder.unreadIndicator instanceof TextView) {
+                ((TextView) holder.unreadIndicator).setText(String.valueOf(conversation.getUnreadCount()));
+            }
         } else {
             holder.unreadIndicator.setVisibility(View.GONE);
         }
@@ -104,7 +107,10 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         return conversations.size();
     }
 
-    private String formatTime(Date date) {
+    private String formatTime(LocalDateTime dateTime) {
+        if (dateTime == null) return "";
+
+        Date date = Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
         long now = System.currentTimeMillis();
         long messageTime = date.getTime();
         long diff = now - messageTime;
@@ -132,11 +138,11 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         public ConversationViewHolder(@NonNull View itemView) {
             super(itemView);
             avatarImageView = itemView.findViewById(R.id.avatarImageView);
-            userNameTextView = itemView.findViewById(R.id.userNameTextView);
+            userNameTextView = itemView.findViewById(R.id.nameTextView);
             itemTitleTextView = itemView.findViewById(R.id.itemTitleTextView);
             lastMessageTextView = itemView.findViewById(R.id.lastMessageTextView);
             timeTextView = itemView.findViewById(R.id.timeTextView);
-            unreadIndicator = itemView.findViewById(R.id.unreadIndicator);
+            unreadIndicator = itemView.findViewById(R.id.unreadCountTextView);
         }
     }
 }

@@ -1,7 +1,5 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/adapters/MessageAdapter.java
 package com.example.tradeupsprojecy.ui.adapters;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,7 +7,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.tradeupsprojecy.R;
-import com.example.tradeupsprojecy.data.entities.Message;
+import com.example.tradeupsprojecy.data.models.Message;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
@@ -19,12 +17,10 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private static final int TYPE_MESSAGE_SENT = 1;
     private static final int TYPE_MESSAGE_RECEIVED = 2;
 
-    private final Context context;
     private List<Message> messages;
     private final String currentUserId;
 
-    public MessageAdapter(Context context, List<Message> messages, String currentUserId) {
-        this.context = context;
+    public MessageAdapter(List<Message> messages, String currentUserId) {
         this.messages = messages;
         this.currentUserId = currentUserId;
     }
@@ -42,7 +38,7 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public int getItemViewType(int position) {
         Message message = messages.get(position);
-        if (message.getSenderId().equals(currentUserId)) {
+        if (String.valueOf(message.getSenderId()).equals(currentUserId)) {
             return TYPE_MESSAGE_SENT;
         } else {
             return TYPE_MESSAGE_RECEIVED;
@@ -53,10 +49,10 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if (viewType == TYPE_MESSAGE_SENT) {
-            View view = LayoutInflater.from(context).inflate(R.layout.item_message_sent, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_sent, parent, false);
             return new SentMessageViewHolder(view);
         } else {
-            View view = LayoutInflater.from(context).inflate(R.layout.item_message_received, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_received, parent, false);
             return new ReceivedMessageViewHolder(view);
         }
     }
@@ -78,9 +74,9 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     private String formatTime(Message message) {
-        if (message.getCreatedAt() != null) {
+        if (message.getTimestamp() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
-            return sdf.format(message.getCreatedAt());
+            return sdf.format(message.getTimestamp());
         }
         return "";
     }

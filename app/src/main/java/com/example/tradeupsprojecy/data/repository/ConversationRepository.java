@@ -1,7 +1,10 @@
-// app/src/main/java/com/example/tradeupsprojecy/data/repository/ConversationRepository.java
 package com.example.tradeupsprojecy.data.repository;
-import com.example.tradeupsprojecy.data.models.*;
-import com.example.tradeupsprojecy.data.models.response.*;
+
+import com.example.tradeupsprojecy.data.models.Conversation;
+import com.example.tradeupsprojecy.data.models.Message;
+import com.example.tradeupsprojecy.data.models.CreateConversationRequest;
+import com.example.tradeupsprojecy.data.models.SendMessageRequest;
+import com.example.tradeupsprojecy.data.models.response.ApiResponse;
 import com.example.tradeupsprojecy.data.network.ApiService;
 import com.example.tradeupsprojecy.data.network.NetworkClient;
 import retrofit2.Call;
@@ -38,6 +41,7 @@ public class ConversationRepository {
 
     public void getUserConversations(String token, ConversationsCallback callback) {
         Call<ApiResponse<List<Conversation>>> call = apiService.getUserConversations("Bearer " + token);
+
         call.enqueue(new Callback<ApiResponse<List<Conversation>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Conversation>>> call, Response<ApiResponse<List<Conversation>>> response) {
@@ -62,6 +66,7 @@ public class ConversationRepository {
 
     public void getConversationMessages(String conversationId, String token, MessagesCallback callback) {
         Call<ApiResponse<List<Message>>> call = apiService.getConversationMessages(conversationId, "Bearer " + token);
+
         call.enqueue(new Callback<ApiResponse<List<Message>>>() {
             @Override
             public void onResponse(Call<ApiResponse<List<Message>>> call, Response<ApiResponse<List<Message>>> response) {
@@ -86,6 +91,7 @@ public class ConversationRepository {
 
     public void sendMessage(String token, SendMessageRequest request, MessageCallback callback) {
         Call<ApiResponse<Message>> call = apiService.sendMessage("Bearer " + token, request);
+
         call.enqueue(new Callback<ApiResponse<Message>>() {
             @Override
             public void onResponse(Call<ApiResponse<Message>> call, Response<ApiResponse<Message>> response) {
@@ -110,6 +116,7 @@ public class ConversationRepository {
 
     public void createConversation(String token, CreateConversationRequest request, ConversationCallback callback) {
         Call<ApiResponse<Conversation>> call = apiService.createConversation("Bearer " + token, request);
+
         call.enqueue(new Callback<ApiResponse<Conversation>>() {
             @Override
             public void onResponse(Call<ApiResponse<Conversation>> call, Response<ApiResponse<Conversation>> response) {

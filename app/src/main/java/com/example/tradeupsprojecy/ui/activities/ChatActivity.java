@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/activities/ChatActivity.java
 package com.example.tradeupsprojecy.ui.activities;
 
 import android.content.Intent;
@@ -13,22 +12,15 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.example.tradeupsprojecy.data.models.request.*;
-import com.example.tradeupsprojecy.data.models.response.*;
-import com.example.tradeupsprojecy.data.models.*;
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Message;
 import com.example.tradeupsprojecy.data.models.SendMessageRequest;
-import com.example.tradeupsprojecy.data.network.NetworkClient;
+import com.example.tradeupsprojecy.data.repository.ConversationRepository;
 import com.example.tradeupsprojecy.ui.adapters.MessageAdapter;
-import com.example.tradeupsprojecy.utils.PreferenceManager;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class ChatActivity extends AppCompatActivity {
     private RecyclerView messagesRecyclerView;
@@ -40,7 +32,8 @@ public class ChatActivity extends AppCompatActivity {
     private List<Message> messageList;
     private String conversationId;
     private String participantName;
-    private PreferenceManager preferenceManager;
+    private SessionManager sessionManager;
+    private ConversationRepository conversationRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,9 +51,10 @@ public class ChatActivity extends AppCompatActivity {
         messagesRecyclerView = findViewById(R.id.messagesRecyclerView);
         messageEditText = findViewById(R.id.messageEditText);
         sendButton = findViewById(R.id.sendButton);
-        chatTitle = findViewById(R.id.chatTitle);
+        chatTitle = findViewById(R.id.userNameText);
 
-        preferenceManager = new PreferenceManager(this);
+        sessionManager = new SessionManager(this);
+        conversationRepository = new ConversationRepository();
         messageList = new ArrayList<>();
     }
 
@@ -75,7 +69,7 @@ public class ChatActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        messageAdapter = new MessageAdapter(messageList, getCurrentUserId());
+        messageAdapter = new MessageAdapter(messageList, sessionManager.getUserId());
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         messagesRecyclerView.setLayoutManager(layoutManager);
         messagesRecyclerView.setAdapter(messageAdapter);
@@ -83,34 +77,25 @@ public class ChatActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         sendButton.setOnClickListener(v -> sendMessage());
-
         findViewById(R.id.backButton).setOnClickListener(v -> finish());
     }
 
     private void loadMessages() {
         if (conversationId == null) return;
 
-        String token = preferenceManager.getToken();
-
-        Call<List<Message>> call = NetworkClient.getApiService()
-                .getConversationMessages(conversationId, "Bearer " + token);
-
-        call.enqueue(new Callback<List<Message>>() {
+        String token = sessionManager.getToken();
+        conversationRepository.getConversationMessages(conversationId, token, new ConversationRepository.MessagesCallback() {
             @Override
-            public void onResponse(Call<List<Message>> call, Response<List<Message>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    messageList.clear();
-                    messageList.addAll(response.body());
-                    messageAdapter.notifyDataSetChanged();
-                    scrollToBottom();
-                } else {
-                    Toast.makeText(ChatActivity.this, "Failed to load messages", Toast.LENGTH_SHORT).show();
-                }
+            public void onSuccess(List<Message> messages) {
+                messageList.clear();
+                messageList.addAll(messages);
+                messageAdapter.notifyDataSetChanged();
+                scrollToBottom();
             }
 
             @Override
-            public void onFailure(Call<List<Message>> call, Throwable t) {
-                Toast.makeText(ChatActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onError(String error) {
+                Toast.makeText(ChatActivity.this, "Failed to load messages: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -119,33 +104,27 @@ public class ChatActivity extends AppCompatActivity {
         String messageText = messageEditText.getText().toString().trim();
         if (TextUtils.isEmpty(messageText)) return;
 
-        String token = preferenceManager.getToken();
-
-        // Create request
+        String token = sessionManager.getToken();
         SendMessageRequest request = new SendMessageRequest();
-        request.setConversationId(Long.parseLong(conversationId));
-        request.setContent(messageText);
+        try {
+            request.setConversationId(Long.parseLong(conversationId));
+        } catch (NumberFormatException e) {
+            return;
+        }
+        request.setMessage(messageText);
 
-        Call<Message> call = NetworkClient.getApiService()
-                .sendMessage("Bearer " + token, request);
-
-        call.enqueue(new Callback<Message>() {
+        conversationRepository.sendMessage(token, request, new ConversationRepository.MessageCallback() {
             @Override
-            public void onResponse(Call<Message> call, Response<Message> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Message newMessage = response.body();
-                    messageList.add(newMessage);
-                    messageAdapter.notifyItemInserted(messageList.size() - 1);
-                    messageEditText.setText("");
-                    scrollToBottom();
-                } else {
-                    Toast.makeText(ChatActivity.this, "Failed to send message", Toast.LENGTH_SHORT).show();
-                }
+            public void onSuccess(Message message) {
+                messageList.add(message);
+                messageAdapter.notifyItemInserted(messageList.size() - 1);
+                messageEditText.setText("");
+                scrollToBottom();
             }
 
             @Override
-            public void onFailure(Call<Message> call, Throwable t) {
-                Toast.makeText(ChatActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onError(String error) {
+                Toast.makeText(ChatActivity.this, "Failed to send message: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -154,9 +133,5 @@ public class ChatActivity extends AppCompatActivity {
         if (messageList.size() > 0) {
             messagesRecyclerView.scrollToPosition(messageList.size() - 1);
         }
-    }
-
-    private Long getCurrentUserId() {
-        return preferenceManager.getUserId();
     }
 }

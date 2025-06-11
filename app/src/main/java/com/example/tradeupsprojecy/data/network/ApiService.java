@@ -11,6 +11,8 @@ import java.util.Map;
 
 public interface ApiService {
 
+
+
     // ============= AUTH ENDPOINTS =============
     @POST("auth/login")
     Call<AuthResponse> login(@Body AuthRequest request);
@@ -116,4 +118,6 @@ public interface ApiService {
             @Header("Authorization") String token,
             @Body SendMessageRequest request
     );
+
+
 }

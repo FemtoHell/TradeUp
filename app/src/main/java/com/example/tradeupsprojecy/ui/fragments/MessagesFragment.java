@@ -1,6 +1,7 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/fragments/MessagesFragment.java
+// MessagesFragment.java
 package com.example.tradeupsprojecy.ui.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,16 +18,13 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Conversation;
-import com.example.tradeupsprojecy.data.network.NetworkClient;
+import com.example.tradeupsprojecy.data.repository.ConversationRepository;
+import com.example.tradeupsprojecy.ui.activities.ChatActivity;
 import com.example.tradeupsprojecy.ui.adapters.ConversationAdapter;
-import com.example.tradeupsprojecy.utils.PreferenceManager;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class MessagesFragment extends Fragment implements ConversationAdapter.OnConversationClickListener {
     private RecyclerView conversationsRecyclerView;
@@ -35,7 +33,8 @@ public class MessagesFragment extends Fragment implements ConversationAdapter.On
 
     private ConversationAdapter conversationAdapter;
     private List<Conversation> conversationList;
-    private PreferenceManager preferenceManager;
+    private SessionManager sessionManager;
+    private ConversationRepository conversationRepository;
 
     @Nullable
     @Override
@@ -52,10 +51,11 @@ public class MessagesFragment extends Fragment implements ConversationAdapter.On
 
     private void initViews(View view) {
         conversationsRecyclerView = view.findViewById(R.id.conversationsRecyclerView);
-        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefresh);
         emptyStateText = view.findViewById(R.id.emptyStateText);
 
-        preferenceManager = new PreferenceManager(getContext());
+        sessionManager = new SessionManager(getContext());
+        conversationRepository = new ConversationRepository();
         conversationList = new ArrayList<>();
     }
 
@@ -70,19 +70,19 @@ public class MessagesFragment extends Fragment implements ConversationAdapter.On
     }
 
     private void loadConversations() {
-        String token = preferenceManager.getToken();
+        String token = sessionManager.getToken();
+        if (token == null) {
+            swipeRefreshLayout.setRefreshing(false);
+            return;
+        }
 
-        Call<List<Conversation>> call = NetworkClient.getApiService()
-                .getUserConversations("Bearer " + token);
-
-        call.enqueue(new Callback<List<Conversation>>() {
+        conversationRepository.getUserConversations(token, new ConversationRepository.ConversationsCallback() {
             @Override
-            public void onResponse(Call<List<Conversation>> call, Response<List<Conversation>> response) {
-                swipeRefreshLayout.setRefreshing(false);
-
-                if (response.isSuccessful() && response.body() != null) {
+            public void onSuccess(List<Conversation> conversations) {
+                if (getActivity() != null && isAdded()) {
+                    swipeRefreshLayout.setRefreshing(false);
                     conversationList.clear();
-                    conversationList.addAll(response.body());
+                    conversationList.addAll(conversations);
                     conversationAdapter.notifyDataSetChanged();
 
                     // Show/hide empty state
@@ -93,38 +93,25 @@ public class MessagesFragment extends Fragment implements ConversationAdapter.On
                         emptyStateText.setVisibility(View.GONE);
                         conversationsRecyclerView.setVisibility(View.VISIBLE);
                     }
-                } else {
-                    Toast.makeText(getContext(), "Failed to load conversations", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Conversation>> call, Throwable t) {
-                swipeRefreshLayout.setRefreshing(false);
-                Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onError(String error) {
+                if (getActivity() != null && isAdded()) {
+                    swipeRefreshLayout.setRefreshing(false);
+                    Toast.makeText(getContext(), "Failed to load conversations: " + error, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
 
     @Override
     public void onConversationClick(Conversation conversation) {
-        // Navigate to ChatActivity
-        // Intent intent = new Intent(getContext(), ChatActivity.class);
-        // intent.putExtra("conversation_id", conversation.getId().toString());
-        // intent.putExtra("participant_name", getOtherParticipantName(conversation));
-        // startActivity(intent);
-
-        Toast.makeText(getContext(), "Chat with " + getOtherParticipantName(conversation), Toast.LENGTH_SHORT).show();
-    }
-
-    private String getOtherParticipantName(Conversation conversation) {
-        Long currentUserId = preferenceManager.getUserId();
-
-        if (conversation.getParticipant1Id().equals(currentUserId)) {
-            return conversation.getParticipant2Name();
-        } else {
-            return conversation.getParticipant1Name();
-        }
+        Intent intent = new Intent(getContext(), ChatActivity.class);
+        intent.putExtra("conversation_id", conversation.getId());
+        intent.putExtra("participant_name", conversation.getOtherUserName());
+        startActivity(intent);
     }
 
     @Override

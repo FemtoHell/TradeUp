@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/activities/ItemDetailActivity.java
 package com.example.tradeupsprojecy.ui.activities;
 
 import android.content.Intent;
@@ -16,25 +15,24 @@ import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Conversation;
 import com.example.tradeupsprojecy.data.models.CreateConversationRequest;
 import com.example.tradeupsprojecy.data.models.Listing;
-import com.example.tradeupsprojecy.data.network.NetworkClient;
+import com.example.tradeupsprojecy.data.repository.ConversationRepository;
+import com.example.tradeupsprojecy.data.repository.ItemRepository;
 import com.example.tradeupsprojecy.ui.adapters.ImageSliderAdapter;
-import com.example.tradeupsprojecy.utils.PreferenceManager;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 
 import java.text.NumberFormat;
 import java.util.Locale;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class ItemDetailActivity extends AppCompatActivity {
     private ViewPager2 imageViewPager;
-    private TextView titleText, priceText, descriptionText, locationText, conditionText, sellerNameText;
+    private TextView titleTextView, priceTextView, descriptionTextView, locationTextView, conditionTextView, sellerNameTextView;
     private Button contactSellerButton;
     private ImageView backButton, favoriteButton;
 
     private Listing currentListing;
-    private PreferenceManager preferenceManager;
+    private SessionManager sessionManager;
+    private ItemRepository itemRepository;
+    private ConversationRepository conversationRepository;
     private Long itemId;
 
     @Override
@@ -50,17 +48,19 @@ public class ItemDetailActivity extends AppCompatActivity {
 
     private void initViews() {
         imageViewPager = findViewById(R.id.imageViewPager);
-        titleText = findViewById(R.id.titleText);
-        priceText = findViewById(R.id.priceText);
-        descriptionText = findViewById(R.id.descriptionText);
-        locationText = findViewById(R.id.locationText);
-        conditionText = findViewById(R.id.conditionText);
-        sellerNameText = findViewById(R.id.sellerNameText);
-        contactSellerButton = findViewById(R.id.contactSellerButton);
+        titleTextView = findViewById(R.id.titleTextView);
+        priceTextView = findViewById(R.id.priceTextView);
+        descriptionTextView = findViewById(R.id.descriptionTextView);
+        locationTextView = findViewById(R.id.locationTextView);
+        conditionTextView = findViewById(R.id.conditionTextView);
+        sellerNameTextView = findViewById(R.id.sellerNameTextView);
+        contactSellerButton = findViewById(R.id.messageSellerBtn);
         backButton = findViewById(R.id.backButton);
-        favoriteButton = findViewById(R.id.favoriteButton);
+        favoriteButton = findViewById(R.id.favoriteBtn);
 
-        preferenceManager = new PreferenceManager(this);
+        sessionManager = new SessionManager(this);
+        itemRepository = new ItemRepository();
+        conversationRepository = new ConversationRepository();
     }
 
     private void getIntentData() {
@@ -70,9 +70,7 @@ public class ItemDetailActivity extends AppCompatActivity {
 
     private void setupClickListeners() {
         backButton.setOnClickListener(v -> finish());
-
         contactSellerButton.setOnClickListener(v -> contactSeller());
-
         favoriteButton.setOnClickListener(v -> toggleFavorite());
     }
 
@@ -83,23 +81,16 @@ public class ItemDetailActivity extends AppCompatActivity {
             return;
         }
 
-        Call<Listing> call = NetworkClient.getApiService().getItemById(itemId);
-
-        call.enqueue(new Callback<Listing>() {
+        itemRepository.getItemById(itemId, new ItemRepository.ItemCallback() {
             @Override
-            public void onResponse(Call<Listing> call, Response<Listing> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    currentListing = response.body();
-                    displayItemDetails();
-                } else {
-                    Toast.makeText(ItemDetailActivity.this, "Failed to load item details", Toast.LENGTH_SHORT).show();
-                    finish();
-                }
+            public void onSuccess(Listing listing) {
+                currentListing = listing;
+                displayItemDetails();
             }
 
             @Override
-            public void onFailure(Call<Listing> call, Throwable t) {
-                Toast.makeText(ItemDetailActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onError(String error) {
+                Toast.makeText(ItemDetailActivity.this, "Failed to load item details: " + error, Toast.LENGTH_SHORT).show();
                 finish();
             }
         });
@@ -108,16 +99,18 @@ public class ItemDetailActivity extends AppCompatActivity {
     private void displayItemDetails() {
         if (currentListing == null) return;
 
-        titleText.setText(currentListing.getTitle());
+        titleTextView.setText(currentListing.getTitle());
 
         // Format price
-        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-        priceText.setText(formatter.format(currentListing.getPrice()));
+        if (currentListing.getPrice() != null) {
+            NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+            priceTextView.setText(formatter.format(currentListing.getPrice()));
+        }
 
-        descriptionText.setText(currentListing.getDescription());
-        locationText.setText(currentListing.getLocation());
-        conditionText.setText(currentListing.getCondition());
-        sellerNameText.setText(currentListing.getSellerName());
+        descriptionTextView.setText(currentListing.getDescription());
+        locationTextView.setText(currentListing.getLocation());
+        conditionTextView.setText(currentListing.getCondition());
+        sellerNameTextView.setText(currentListing.getSellerName());
 
         // Setup image slider
         if (currentListing.getImages() != null && !currentListing.getImages().isEmpty()) {
@@ -126,49 +119,44 @@ public class ItemDetailActivity extends AppCompatActivity {
         }
 
         // Hide contact button if user is the seller
-        if (currentListing.getSellerId().equals(preferenceManager.getUserId())) {
-            contactSellerButton.setVisibility(View.GONE);
+        try {
+            Long currentUserId = Long.parseLong(sessionManager.getUserId());
+            if (currentListing.getSellerId().equals(currentUserId)) {
+                contactSellerButton.setVisibility(View.GONE);
+            }
+        } catch (NumberFormatException e) {
+            // Handle error parsing user ID
         }
     }
 
     private void contactSeller() {
         if (currentListing == null) return;
 
-        String token = preferenceManager.getToken();
+        String token = sessionManager.getToken();
 
         CreateConversationRequest request = new CreateConversationRequest();
-        request.setParticipantId(currentListing.getSellerId());
         request.setItemId(currentListing.getId());
-        request.setMessage("Hi, I'm interested in your " + currentListing.getTitle());
+        request.setSellerId(currentListing.getSellerId().toString());
+        request.setBuyerId(sessionManager.getUserId());
 
-        Call<Conversation> call = NetworkClient.getApiService()
-                .createConversation("Bearer " + token, request);
-
-        call.enqueue(new Callback<Conversation>() {
+        conversationRepository.createConversation(token, request, new ConversationRepository.ConversationCallback() {
             @Override
-            public void onResponse(Call<Conversation> call, Response<Conversation> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Conversation conversation = response.body();
-
-                    // Navigate to chat
-                    Intent intent = new Intent(ItemDetailActivity.this, ChatActivity.class);
-                    intent.putExtra("conversation_id", conversation.getId().toString());
-                    intent.putExtra("participant_name", currentListing.getSellerName());
-                    startActivity(intent);
-                } else {
-                    Toast.makeText(ItemDetailActivity.this, "Failed to start conversation", Toast.LENGTH_SHORT).show();
-                }
+            public void onSuccess(Conversation conversation) {
+                // Navigate to chat
+                Intent intent = new Intent(ItemDetailActivity.this, ChatActivity.class);
+                intent.putExtra("conversation_id", conversation.getId());
+                intent.putExtra("participant_name", currentListing.getSellerName());
+                startActivity(intent);
             }
 
             @Override
-            public void onFailure(Call<Conversation> call, Throwable t) {
-                Toast.makeText(ItemDetailActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onError(String error) {
+                Toast.makeText(ItemDetailActivity.this, "Failed to start conversation: " + error, Toast.LENGTH_SHORT).show();
             }
         });
     }
 
     private void toggleFavorite() {
-        // TODO: Implement favorite functionality
         Toast.makeText(this, "Favorite functionality coming soon", Toast.LENGTH_SHORT).show();
     }
 }

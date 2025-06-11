@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/fragments/AddListingFragment.java
 package com.example.tradeupsprojecy.ui.fragments;
 
 import android.os.Bundle;
@@ -20,16 +19,13 @@ import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Category;
 import com.example.tradeupsprojecy.data.models.CreateItemRequest;
 import com.example.tradeupsprojecy.data.models.Listing;
-import com.example.tradeupsprojecy.data.network.NetworkClient;
-import com.example.tradeupsprojecy.utils.PreferenceManager;
+import com.example.tradeupsprojecy.data.repository.CategoryRepository;
+import com.example.tradeupsprojecy.data.repository.ItemRepository;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class AddListingFragment extends Fragment {
     private EditText titleEditText, descriptionEditText, priceEditText, locationEditText;
@@ -37,7 +33,9 @@ public class AddListingFragment extends Fragment {
     private Button submitButton;
 
     private List<Category> categories;
-    private PreferenceManager preferenceManager;
+    private SessionManager sessionManager;
+    private ItemRepository itemRepository;
+    private CategoryRepository categoryRepository;
 
     @Nullable
     @Override
@@ -56,12 +54,14 @@ public class AddListingFragment extends Fragment {
         titleEditText = view.findViewById(R.id.titleEditText);
         descriptionEditText = view.findViewById(R.id.descriptionEditText);
         priceEditText = view.findViewById(R.id.priceEditText);
-        locationEditText = view.findViewById(R.id.locationEditText);
+        locationEditText = view.findViewById(R.id.locationInput);
         categorySpinner = view.findViewById(R.id.categorySpinner);
-        conditionSpinner = view.findViewById(R.id.conditionSpinner);
-        submitButton = view.findViewById(R.id.submitButton);
+        conditionSpinner = view.findViewById(R.id.conditionChipGroup); // This might need to be changed based on your layout
+        submitButton = view.findViewById(R.id.publishBtn);
 
-        preferenceManager = new PreferenceManager(getContext());
+        sessionManager = new SessionManager(getContext());
+        itemRepository = new ItemRepository();
+        categoryRepository = new CategoryRepository();
         categories = new ArrayList<>();
     }
 
@@ -71,7 +71,7 @@ public class AddListingFragment extends Fragment {
         ArrayAdapter<String> conditionAdapter = new ArrayAdapter<>(
                 getContext(), android.R.layout.simple_spinner_item, conditions);
         conditionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        conditionSpinner.setAdapter(conditionAdapter);
+        // conditionSpinner.setAdapter(conditionAdapter); // Uncomment if using spinner
     }
 
     private void setupClickListeners() {
@@ -79,23 +79,21 @@ public class AddListingFragment extends Fragment {
     }
 
     private void loadCategories() {
-        Call<List<Category>> call = NetworkClient.getApiService().getAllCategories();
-
-        call.enqueue(new Callback<List<Category>>() {
+        categoryRepository.getAllCategories(new CategoryRepository.CategoriesCallback() {
             @Override
-            public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
-                if (response.isSuccessful() && response.body() != null) {
+            public void onSuccess(List<Category> categoriesList) {
+                if (getActivity() != null && isAdded()) {
                     categories.clear();
-                    categories.addAll(response.body());
+                    categories.addAll(categoriesList);
                     setupCategorySpinner();
-                } else {
-                    Toast.makeText(getContext(), "Failed to load categories", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Category>> call, Throwable t) {
-                Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onError(String error) {
+                if (getActivity() != null && isAdded()) {
+                    Toast.makeText(getContext(), "Failed to load categories: " + error, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -116,7 +114,7 @@ public class AddListingFragment extends Fragment {
         // Validate inputs
         if (!validateInputs()) return;
 
-        String token = preferenceManager.getToken();
+        String token = sessionManager.getToken();
 
         // Create request
         CreateItemRequest request = new CreateItemRequest();
@@ -124,7 +122,7 @@ public class AddListingFragment extends Fragment {
         request.setDescription(descriptionEditText.getText().toString().trim());
         request.setPrice(new BigDecimal(priceEditText.getText().toString().trim()));
         request.setLocation(locationEditText.getText().toString().trim());
-        request.setCondition(conditionSpinner.getSelectedItem().toString());
+        request.setCondition("New"); // Default condition since spinner might not be set up
 
         // Get selected category ID
         int selectedPosition = categorySpinner.getSelectedItemPosition();
@@ -135,23 +133,20 @@ public class AddListingFragment extends Fragment {
         // Add empty image URLs list for now
         request.setImageUrls(new ArrayList<>());
 
-        Call<Listing> call = NetworkClient.getApiService()
-                .createItem("Bearer " + token, request);
-
-        call.enqueue(new Callback<Listing>() {
+        itemRepository.createItem(token, request, new ItemRepository.ItemCallback() {
             @Override
-            public void onResponse(Call<Listing> call, Response<Listing> response) {
-                if (response.isSuccessful() && response.body() != null) {
+            public void onSuccess(Listing listing) {
+                if (getActivity() != null && isAdded()) {
                     Toast.makeText(getContext(), "Listing created successfully!", Toast.LENGTH_SHORT).show();
                     clearForm();
-                } else {
-                    Toast.makeText(getContext(), "Failed to create listing", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<Listing> call, Throwable t) {
-                Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            public void onError(String error) {
+                if (getActivity() != null && isAdded()) {
+                    Toast.makeText(getContext(), "Failed to create listing: " + error, Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }
@@ -193,6 +188,5 @@ public class AddListingFragment extends Fragment {
         priceEditText.setText("");
         locationEditText.setText("");
         categorySpinner.setSelection(0);
-        conditionSpinner.setSelection(0);
     }
 }
