@@ -10,35 +10,48 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.bitmap.CenterCrop;
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.example.tradeupsprojecy.R;
-import com.example.tradeupsprojecy.data.entities.Item;
+import com.example.tradeupsprojecy.data.models.Listing;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ListingViewHolder> {
 
-    private final Context context;
-    private List<Item> items;
-    private OnItemClickListener onItemClickListener;
+    private Context context;
+    private List<Listing> listings;
+    private OnListingClickListener listener;
 
-    public interface OnItemClickListener {
-        void onItemClick(Item item);
-    }
-
-    public ListingAdapter(Context context, List<Item> items) {
+    public ListingAdapter(Context context, List<Listing> listings) {
         this.context = context;
-        this.items = items;
+        this.listings = listings != null ? listings : new ArrayList<>();
     }
 
-    public void setOnItemClickListener(OnItemClickListener listener) {
-        this.onItemClickListener = listener;
+    public ListingAdapter(Context context) {
+        this.context = context;
+        this.listings = new ArrayList<>();
     }
 
-    public void updateItems(List<Item> newItems) {
-        this.items = newItems;
+    public void setOnListingClickListener(OnListingClickListener listener) {
+        this.listener = listener;
+    }
+
+    public void setListings(List<Listing> listings) {
+        this.listings = listings != null ? listings : new ArrayList<>();
+        notifyDataSetChanged();
+    }
+
+    public void addListings(List<Listing> newListings) {
+        if (newListings != null) {
+            int startPosition = this.listings.size();
+            this.listings.addAll(newListings);
+            notifyItemRangeInserted(startPosition, newListings.size());
+        }
+    }
+
+    public void clearListings() {
+        this.listings.clear();
         notifyDataSetChanged();
     }
 
@@ -51,65 +64,75 @@ public class ListingAdapter extends RecyclerView.Adapter<ListingAdapter.ListingV
 
     @Override
     public void onBindViewHolder(@NonNull ListingViewHolder holder, int position) {
-        Item item = items.get(position);
-
-        // Title
-        holder.titleTextView.setText(item.getTitle() != null ? item.getTitle() : "No title");
-
-        // Price
-        if (item.getPrice() != null) {
-            NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
-            holder.priceTextView.setText(formatter.format(item.getPrice()));
-        } else {
-            holder.priceTextView.setText("Price not available");
-        }
-
-        // Location
-        holder.locationTextView.setText(item.getLocation() != null ? item.getLocation() : "Location not specified");
-
-        // Seller name
-        holder.sellerText.setText(item.getSellerName() != null ? item.getSellerName() : "Unknown seller"); // Đổi tên
-
-        // Image
-        if (item.getImageUrls() != null && !item.getImageUrls().isEmpty()) {
-            String imageUrl = item.getImageUrls().get(0);
-            Glide.with(context)
-                    .load(imageUrl)
-                    .transform(new CenterCrop(), new RoundedCorners(16))
-                    .placeholder(android.R.drawable.ic_menu_gallery)
-                    .error(android.R.drawable.ic_menu_close_clear_cancel)
-                    .into(holder.imageView);
-        } else {
-            holder.imageView.setImageResource(android.R.drawable.ic_menu_gallery);
-        }
-
-        // Click listener
-        holder.itemView.setOnClickListener(v -> {
-            if (onItemClickListener != null) {
-                onItemClickListener.onItemClick(item);
-            }
-        });
+        Listing listing = listings.get(position);
+        holder.bind(listing);
     }
 
     @Override
     public int getItemCount() {
-        return items.size();
+        return listings.size();
     }
 
-    static class ListingViewHolder extends RecyclerView.ViewHolder {
-        ImageView imageView;
-        TextView titleTextView;
-        TextView priceTextView;
-        TextView locationTextView;
-        TextView sellerText; // Đổi tên
+    class ListingViewHolder extends RecyclerView.ViewHolder {
+        private ImageView itemImage, favoriteIcon;
+        private TextView titleText, priceText, locationText, conditionText;
 
         public ListingViewHolder(@NonNull View itemView) {
             super(itemView);
-            imageView = itemView.findViewById(R.id.itemImageView);
-            titleTextView = itemView.findViewById(R.id.titleTextView);
-            priceTextView = itemView.findViewById(R.id.priceTextView);
-            locationTextView = itemView.findViewById(R.id.locationTextView);
-            sellerText = itemView.findViewById(R.id.sellerText); // Đổi tên
+            itemImage = itemView.findViewById(R.id.itemImage);
+            favoriteIcon = itemView.findViewById(R.id.favoriteIcon);
+            titleText = itemView.findViewById(R.id.titleText);
+            priceText = itemView.findViewById(R.id.priceText);
+            locationText = itemView.findViewById(R.id.locationText);
+            conditionText = itemView.findViewById(R.id.conditionText);
+
+            itemView.setOnClickListener(v -> {
+                if (listener != null) {
+                    int position = getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        listener.onListingClick(listings.get(position));
+                    }
+                }
+            });
+
+            favoriteIcon.setOnClickListener(v -> {
+                if (listener != null) {
+                    int position = getAdapterPosition();
+                    if (position != RecyclerView.NO_POSITION) {
+                        listener.onFavoriteClick(listings.get(position), position);
+                    }
+                }
+            });
+        }
+
+        public void bind(Listing listing) {
+            titleText.setText(listing.getTitle());
+
+            // Format price
+            if (listing.getPrice() != null) {
+                NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("vi", "VN"));
+                priceText.setText(formatter.format(listing.getPrice()));
+            } else {
+                priceText.setText("Liên hệ");
+            }
+
+            locationText.setText(listing.getLocation() != null ? listing.getLocation() : "Không xác định");
+            conditionText.setText(listing.getCondition() != null ? listing.getCondition() : "Mới");
+
+            // Load image
+            if (listing.getImages() != null && !listing.getImages().isEmpty()) {
+                Glide.with(context)
+                        .load(listing.getImages().get(0))
+                        .placeholder(R.drawable.placeholder_image)
+                        .error(R.drawable.placeholder_image)
+                        .centerCrop()
+                        .into(itemImage);
+            } else {
+                itemImage.setImageResource(R.drawable.placeholder_image);
+            }
+
+            // Set favorite state (you can implement this based on your requirements)
+            favoriteIcon.setImageResource(R.drawable.ic_favorite_border);
         }
     }
 }

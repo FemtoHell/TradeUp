@@ -12,7 +12,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.api.ApiClient;
-import com.example.tradeupsprojecy.data.api.ApiService;
+import com.example.tradeupsprojecy.data.network.ApiService;
 import com.example.tradeupsprojecy.data.models.request.AuthRequest;
 import com.example.tradeupsprojecy.data.models.response.AuthResponse;
 import com.example.tradeupsprojecy.data.local.SessionManager;

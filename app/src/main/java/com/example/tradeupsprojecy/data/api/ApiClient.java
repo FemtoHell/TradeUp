@@ -1,6 +1,7 @@
 // app/src/main/java/com/example/tradeupsprojecy/data/api/ApiClient.java
 package com.example.tradeupsprojecy.data.api;
 
+import com.example.tradeupsprojecy.data.network.ApiService;
 import com.example.tradeupsprojecy.utils.Constants;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

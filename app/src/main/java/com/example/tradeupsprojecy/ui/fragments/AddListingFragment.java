@@ -1,261 +1,101 @@
 // app/src/main/java/com/example/tradeupsprojecy/ui/fragments/AddListingFragment.java
 package com.example.tradeupsprojecy.ui.fragments;
 
-import android.Manifest;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
-import android.util.Log;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
-import android.widget.LinearLayout;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.tradeupsprojecy.R;
-import com.example.tradeupsprojecy.data.api.ApiClient;
-import com.example.tradeupsprojecy.data.api.ApiService;
-import com.example.tradeupsprojecy.data.local.SessionManager;
-import com.example.tradeupsprojecy.data.entities.Category;
-import com.example.tradeupsprojecy.data.entities.Item;
-import com.example.tradeupsprojecy.data.models.request.CreateItemRequest;
-import com.example.tradeupsprojecy.data.models.response.ApiResponse;
-import com.example.tradeupsprojecy.ui.adapters.ImageSelectionAdapter;
-import com.example.tradeupsprojecy.utils.ImageUtils;
-import com.example.tradeupsprojecy.utils.LocationUtils;
-import com.example.tradeupsprojecy.utils.ValidationUtils;
-import com.google.android.material.button.MaterialButton;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.textfield.TextInputEditText;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import com.example.tradeupsprojecy.data.models.Category;
+import com.example.tradeupsprojecy.data.models.CreateItemRequest;
+import com.example.tradeupsprojecy.data.models.Listing;
+import com.example.tradeupsprojecy.data.network.NetworkClient;
+import com.example.tradeupsprojecy.utils.PreferenceManager;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class AddListingFragment extends Fragment {
+    private EditText titleEditText, descriptionEditText, priceEditText, locationEditText;
+    private Spinner categorySpinner, conditionSpinner;
+    private Button submitButton;
 
-    private static final String TAG = "AddListingFragment";
-    private static final int MAX_IMAGES = 5;
-
-    // Views
-    private TextInputEditText titleEditText;
-    private TextInputEditText descriptionEditText;
-    private TextInputEditText priceEditText;
-    private AutoCompleteTextView categorySpinner;
-    private TextInputEditText locationInput; // Đổi tên
-    private ChipGroup conditionChipGroup;
-    private RecyclerView imageRecyclerView; // Đổi tên
-    private MaterialButton addImageBtn; // Đổi tên
-    private MaterialButton getLocationBtn; // Đổi tên
-    private MaterialButton publishBtn; // Đổi tên
-    private LinearLayout imageLayout; // Đổi tên
-
-    // Services and utilities
-    private ApiService apiService;
-    private SessionManager sessionManager;
-    private LocationUtils locationUtils;
-    private ImageUtils imageUtils;
-
-    // Data
-    private List<Category> categories = new ArrayList<>();
-    private List<Uri> selectedImages = new ArrayList<>();
-    private ImageSelectionAdapter imageAdapter;
-    private String selectedCondition = "";
-    private Long selectedCategoryId = null; // Đổi thành Long
-
-    // Activity result launchers
-    private ActivityResultLauncher<Intent> imagePickerLauncher;
-    private ActivityResultLauncher<String[]> permissionLauncher;
+    private List<Category> categories;
+    private PreferenceManager preferenceManager;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_add_listing, container, false);
-    }
+        View view = inflater.inflate(R.layout.fragment_add_listing, container, false);
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-        Log.d(TAG, "AddListingFragment created");
-
-        initActivityResultLaunchers();
         initViews(view);
-        initServices();
-        setupClickListeners();
-        setupTextWatchers();
-        setupConditionChips();
-        setupImageRecyclerView();
+        setupSpinners();
         loadCategories();
-    }
+        setupClickListeners();
 
-    private void initActivityResultLaunchers() {
-        // Image picker launcher
-        imagePickerLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
-                    if (result.getResultCode() == getActivity().RESULT_OK && result.getData() != null) {
-                        Intent data = result.getData();
-
-                        if (data.getClipData() != null) {
-                            // Multiple images selected
-                            int count = data.getClipData().getItemCount();
-                            for (int i = 0; i < count && selectedImages.size() < MAX_IMAGES; i++) {
-                                Uri imageUri = data.getClipData().getItemAt(i).getUri();
-                                selectedImages.add(imageUri);
-                            }
-                        } else if (data.getData() != null) {
-                            // Single image selected
-                            selectedImages.add(data.getData());
-                        }
-
-                        updateImageAdapter();
-                        updatePublishButtonState();
-                    }
-                }
-        );
-
-        // Permission launcher
-        permissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestMultiplePermissions(),
-                result -> {
-                    Boolean readPermission = result.get(Manifest.permission.READ_EXTERNAL_STORAGE);
-                    if (readPermission != null && readPermission) {
-                        openImagePicker();
-                    } else {
-                        showMessage("Permission denied. Cannot access images.");
-                    }
-                }
-        );
+        return view;
     }
 
     private void initViews(View view) {
         titleEditText = view.findViewById(R.id.titleEditText);
         descriptionEditText = view.findViewById(R.id.descriptionEditText);
         priceEditText = view.findViewById(R.id.priceEditText);
+        locationEditText = view.findViewById(R.id.locationEditText);
         categorySpinner = view.findViewById(R.id.categorySpinner);
-        locationInput = view.findViewById(R.id.locationInput);
-        conditionChipGroup = view.findViewById(R.id.conditionChipGroup);
-        imageRecyclerView = view.findViewById(R.id.imageRecyclerView);
-        addImageBtn = view.findViewById(R.id.addImageBtn);
-        getLocationBtn = view.findViewById(R.id.getLocationBtn);
-        publishBtn = view.findViewById(R.id.publishBtn);
-        imageLayout = view.findViewById(R.id.imageLayout);
+        conditionSpinner = view.findViewById(R.id.conditionSpinner);
+        submitButton = view.findViewById(R.id.submitButton);
+
+        preferenceManager = new PreferenceManager(getContext());
+        categories = new ArrayList<>();
     }
 
-    private void initServices() {
-        apiService = ApiClient.getApiService();
-        sessionManager = new SessionManager(requireContext());
-        locationUtils = new LocationUtils(requireContext());
-        imageUtils = new ImageUtils(requireContext());
+    private void setupSpinners() {
+        // Setup condition spinner
+        String[] conditions = {"New", "Like New", "Good", "Fair", "Poor"};
+        ArrayAdapter<String> conditionAdapter = new ArrayAdapter<>(
+                getContext(), android.R.layout.simple_spinner_item, conditions);
+        conditionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        conditionSpinner.setAdapter(conditionAdapter);
     }
 
     private void setupClickListeners() {
-        addImageBtn.setOnClickListener(v -> {
-            if (selectedImages.size() >= MAX_IMAGES) {
-                showMessage("Maximum " + MAX_IMAGES + " images allowed");
-                return;
-            }
-            checkPermissionAndOpenImagePicker();
-        });
-
-        getLocationBtn.setOnClickListener(v -> getCurrentLocation());
-        publishBtn.setOnClickListener(v -> publishListing());
-    }
-
-    private void setupTextWatchers() {
-        TextWatcher textWatcher = new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                updatePublishButtonState();
-            }
-        };
-
-        titleEditText.addTextChangedListener(textWatcher);
-        descriptionEditText.addTextChangedListener(textWatcher);
-        priceEditText.addTextChangedListener(textWatcher);
-        locationInput.addTextChangedListener(textWatcher);
-    }
-
-    private void setupConditionChips() {
-        String[] conditions = {"New", "Like New", "Good", "Fair", "Poor"};
-
-        for (String condition : conditions) {
-            Chip chip = new Chip(requireContext());
-            chip.setText(condition);
-            chip.setCheckable(true);
-            chip.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (isChecked) {
-                    // Uncheck other chips
-                    for (int i = 0; i < conditionChipGroup.getChildCount(); i++) {
-                        Chip otherChip = (Chip) conditionChipGroup.getChildAt(i);
-                        if (otherChip != chip) {
-                            otherChip.setChecked(false);
-                        }
-                    }
-                    selectedCondition = condition;
-                } else {
-                    selectedCondition = "";
-                }
-                updatePublishButtonState();
-            });
-
-            conditionChipGroup.addView(chip);
-        }
-    }
-
-    private void setupImageRecyclerView() {
-        imageAdapter = new ImageSelectionAdapter(requireContext(), selectedImages);
-        imageRecyclerView.setLayoutManager(new GridLayoutManager(requireContext(), 3));
-        imageRecyclerView.setAdapter(imageAdapter);
-
-        imageAdapter.setOnImageRemoveListener(position -> {
-            selectedImages.remove(position);
-            updateImageAdapter();
-            updatePublishButtonState();
-        });
+        submitButton.setOnClickListener(v -> submitListing());
     }
 
     private void loadCategories() {
-        Log.d(TAG, "Loading categories for spinner");
+        Call<List<Category>> call = NetworkClient.getApiService().getAllCategories();
 
-        apiService.getAllCategories().enqueue(new Callback<ApiResponse<List<Category>>>() {
+        call.enqueue(new Callback<List<Category>>() {
             @Override
-            public void onResponse(Call<ApiResponse<List<Category>>> call, Response<ApiResponse<List<Category>>> response) {
+            public void onResponse(Call<List<Category>> call, Response<List<Category>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<Category>> apiResponse = response.body();
-                    if (apiResponse.isSuccess() && apiResponse.getData() != null) {
-                        categories = apiResponse.getData();
-                        setupCategorySpinner();
-                        Log.d(TAG, "Categories loaded: " + categories.size());
-                    }
+                    categories.clear();
+                    categories.addAll(response.body());
+                    setupCategorySpinner();
+                } else {
+                    Toast.makeText(getContext(), "Failed to load categories", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<List<Category>>> call, Throwable t) {
-                Log.e(TAG, "Failed to load categories: " + t.getMessage());
+            public void onFailure(Call<List<Category>> call, Throwable t) {
+                Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -267,236 +107,92 @@ public class AddListingFragment extends Fragment {
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                requireContext(),
-                android.R.layout.simple_dropdown_item_1line,
-                categoryNames
-        );
-
+                getContext(), android.R.layout.simple_spinner_item, categoryNames);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         categorySpinner.setAdapter(adapter);
-        categorySpinner.setOnItemClickListener((parent, view, position, id) -> {
-            selectedCategoryId = categories.get(position).getId();
-            updatePublishButtonState();
-        });
     }
 
-    private void checkPermissionAndOpenImagePicker() {
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED) {
-            openImagePicker();
-        } else {
-            permissionLauncher.launch(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE});
-        }
-    }
+    private void submitListing() {
+        // Validate inputs
+        if (!validateInputs()) return;
 
-    private void openImagePicker() {
-        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("image/*");
-        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-
-        imagePickerLauncher.launch(Intent.createChooser(intent, "Select Images"));
-    }
-
-    private void getCurrentLocation() {
-        showMessage("Getting current location...");
-
-        locationUtils.getCurrentLocation(new LocationUtils.LocationCallback() {
-            @Override
-            public void onLocationReceived(String address) {
-                if (locationInput != null) {
-                    locationInput.setText(address);
-                    updatePublishButtonState();
-                }
-                showMessage("Location updated");
-            }
-
-            @Override
-            public void onLocationError(String error) {
-                showMessage("Failed to get location: " + error);
-            }
-        });
-    }
-
-    private void updateImageAdapter() {
-        if (imageAdapter != null) {
-            imageAdapter.notifyDataSetChanged();
-        }
-
-        // Show/hide image container
-        if (imageLayout != null) {
-            imageLayout.setVisibility(selectedImages.isEmpty() ? View.GONE : View.VISIBLE);
-        }
-    }
-
-    private void updatePublishButtonState() {
-        String title = titleEditText.getText().toString().trim();
-        String description = descriptionEditText.getText().toString().trim();
-        String price = priceEditText.getText().toString().trim();
-        String location = locationInput.getText().toString().trim();
-
-        boolean hasTitle = !title.isEmpty();
-        boolean hasDescription = !description.isEmpty();
-        boolean hasPrice = !price.isEmpty();
-        boolean hasLocation = !location.isEmpty();
-        boolean hasCondition = !selectedCondition.isEmpty();
-        boolean hasCategory = selectedCategoryId != null;
-        boolean hasImages = !selectedImages.isEmpty();
-
-        boolean canPublish = hasTitle && hasDescription && hasPrice && hasLocation &&
-                hasCondition && hasCategory && hasImages;
-
-        publishBtn.setEnabled(canPublish);
-    }
-
-    private void publishListing() {
-        Log.d(TAG, "Publishing listing");
-
-        if (!validateInputs()) {
-            return;
-        }
-
-        setLoading(true);
+        String token = preferenceManager.getToken();
 
         // Create request
         CreateItemRequest request = new CreateItemRequest();
         request.setTitle(titleEditText.getText().toString().trim());
         request.setDescription(descriptionEditText.getText().toString().trim());
         request.setPrice(new BigDecimal(priceEditText.getText().toString().trim()));
-        request.setCategoryId(selectedCategoryId);
-        request.setLocation(locationInput.getText().toString().trim());
-        request.setCondition(selectedCondition);
+        request.setLocation(locationEditText.getText().toString().trim());
+        request.setCondition(conditionSpinner.getSelectedItem().toString());
 
-        // Add placeholder image URLs
-        List<String> imageUrls = new ArrayList<>();
-        for (int i = 0; i < selectedImages.size(); i++) {
-            imageUrls.add("https://placeholder.image.url/" + i);
+        // Get selected category ID
+        int selectedPosition = categorySpinner.getSelectedItemPosition();
+        if (selectedPosition >= 0 && selectedPosition < categories.size()) {
+            request.setCategoryId(categories.get(selectedPosition).getId());
         }
-        request.setImageUrls(imageUrls);
 
-        createListing(request);
+        // Add empty image URLs list for now
+        request.setImageUrls(new ArrayList<>());
+
+        Call<Listing> call = NetworkClient.getApiService()
+                .createItem("Bearer " + token, request);
+
+        call.enqueue(new Callback<Listing>() {
+            @Override
+            public void onResponse(Call<Listing> call, Response<Listing> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(getContext(), "Listing created successfully!", Toast.LENGTH_SHORT).show();
+                    clearForm();
+                } else {
+                    Toast.makeText(getContext(), "Failed to create listing", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Listing> call, Throwable t) {
+                Toast.makeText(getContext(), "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private boolean validateInputs() {
-        String title = titleEditText.getText().toString().trim();
-        String titleError = ValidationUtils.getTitleError(title);
-        if (titleError != null) {
-            titleEditText.setError(titleError);
-            titleEditText.requestFocus();
+        if (TextUtils.isEmpty(titleEditText.getText())) {
+            titleEditText.setError("Title is required");
             return false;
         }
 
-        String description = descriptionEditText.getText().toString().trim();
-        String descriptionError = ValidationUtils.getDescriptionError(description);
-        if (descriptionError != null) {
-            descriptionEditText.setError(descriptionError);
-            descriptionEditText.requestFocus();
+        if (TextUtils.isEmpty(descriptionEditText.getText())) {
+            descriptionEditText.setError("Description is required");
             return false;
         }
 
-        String price = priceEditText.getText().toString().trim();
-        String priceError = ValidationUtils.getPriceError(price);
-        if (priceError != null) {
-            priceEditText.setError(priceError);
-            priceEditText.requestFocus();
+        if (TextUtils.isEmpty(priceEditText.getText())) {
+            priceEditText.setError("Price is required");
             return false;
         }
 
-        String location = locationInput.getText().toString().trim();
-        if (location.isEmpty()) {
-            locationInput.setError("Location is required");
-            locationInput.requestFocus();
+        try {
+            new BigDecimal(priceEditText.getText().toString().trim());
+        } catch (NumberFormatException e) {
+            priceEditText.setError("Invalid price format");
             return false;
         }
 
-        if (selectedCondition.isEmpty()) {
-            showMessage("Please select item condition");
-            return false;
-        }
-
-        if (selectedCategoryId == null) {
-            showMessage("Please select a category");
-            return false;
-        }
-
-        if (selectedImages.isEmpty()) {
-            showMessage("Please add at least one image");
+        if (TextUtils.isEmpty(locationEditText.getText())) {
+            locationEditText.setError("Location is required");
             return false;
         }
 
         return true;
     }
 
-    private void createListing(CreateItemRequest request) {
-        Log.d(TAG, "Creating listing: " + request.getTitle());
-
-        apiService.createItem(request).enqueue(new Callback<ApiResponse<Item>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<Item>> call, Response<ApiResponse<Item>> response) {
-                setLoading(false);
-
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Item> apiResponse = response.body();
-                    if (apiResponse.isSuccess()) {
-                        Log.d(TAG, "Listing created successfully");
-                        showMessage("Listing published successfully!");
-                        clearForm();
-
-                        // Navigate back to home
-                        if (getActivity() != null) {
-                            getActivity().onBackPressed();
-                        }
-                    } else {
-                        showMessage(apiResponse.getMessage() != null ?
-                                apiResponse.getMessage() : "Failed to create listing");
-                    }
-                } else {
-                    Log.e(TAG, "Create listing API failed: " + response.code());
-                    showMessage("Failed to create listing. Please try again.");
-                }
-            }
-
-            @Override
-            public void onFailure(Call<ApiResponse<Item>> call, Throwable t) {
-                Log.e(TAG, "Create listing API call failed: " + t.getMessage());
-                setLoading(false);
-                showMessage("Network error: " + t.getMessage());
-            }
-        });
-    }
-
     private void clearForm() {
         titleEditText.setText("");
         descriptionEditText.setText("");
         priceEditText.setText("");
-        locationInput.setText("");
-        categorySpinner.setText("");
-        selectedImages.clear();
-        selectedCondition = "";
-        selectedCategoryId = null;
-
-        // Clear condition chips
-        for (int i = 0; i < conditionChipGroup.getChildCount(); i++) {
-            Chip chip = (Chip) conditionChipGroup.getChildAt(i);
-            chip.setChecked(false);
-        }
-
-        updateImageAdapter();
-        updatePublishButtonState();
-    }
-
-    private void setLoading(boolean loading) {
-        publishBtn.setEnabled(!loading);
-        publishBtn.setText(loading ? "Publishing..." : "Publish Listing");
-        titleEditText.setEnabled(!loading);
-        descriptionEditText.setEnabled(!loading);
-        priceEditText.setEnabled(!loading);
-        categorySpinner.setEnabled(!loading);
-        locationInput.setEnabled(!loading);
-        addImageBtn.setEnabled(!loading);
-        getLocationBtn.setEnabled(!loading);
-    }
-
-    private void showMessage(String message) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+        locationEditText.setText("");
+        categorySpinner.setSelection(0);
+        conditionSpinner.setSelection(0);
     }
 }

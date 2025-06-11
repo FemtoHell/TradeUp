@@ -1,50 +1,47 @@
 // app/src/main/java/com/example/tradeupsprojecy/ui/fragments/HomeFragment.java
 package com.example.tradeupsprojecy.ui.fragments;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.tradeupsprojecy.R;
-import com.example.tradeupsprojecy.ui.activities.MainActivity;
-import com.example.tradeupsprojecy.data.api.ApiClient;
-import com.example.tradeupsprojecy.data.api.ApiService;
-// ✅ FIXED: Đúng imports này
-import com.example.tradeupsprojecy.data.entities.Category;
-import com.example.tradeupsprojecy.data.entities.Item;
-import com.example.tradeupsprojecy.data.models.response.ApiResponse;
+import com.example.tradeupsprojecy.data.models.Category;
+import com.example.tradeupsprojecy.data.models.Listing;
+import com.example.tradeupsprojecy.data.repository.CategoryRepository;
+import com.example.tradeupsprojecy.data.repository.ItemRepository;
+import com.example.tradeupsprojecy.ui.activities.ItemDetailActivity;
 import com.example.tradeupsprojecy.ui.adapters.CategoryAdapter;
 import com.example.tradeupsprojecy.ui.adapters.ListingAdapter;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import java.util.ArrayList;
+import com.example.tradeupsprojecy.ui.adapters.OnListingClickListener;
+import com.google.android.material.textview.MaterialTextView;
 import java.util.List;
 
-public class HomeFragment extends Fragment {
+public class HomeFragment extends Fragment implements OnListingClickListener, CategoryAdapter.OnCategoryClickListener {
 
     private static final String TAG = "HomeFragment";
 
-    private LinearLayout searchLayout;
-    private RecyclerView categoriesRecyclerView;
-    private RecyclerView featuredRecyclerView;
-    private RecyclerView recentListingsRecyclerView;
-
-    private ApiService apiService;
+    private RecyclerView categoriesRecyclerView, featuredRecyclerView, recentRecyclerView;
     private CategoryAdapter categoryAdapter;
-    private ListingAdapter featuredAdapter;
-    private ListingAdapter recentAdapter;
+    private ListingAdapter featuredAdapter, recentAdapter;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private MaterialTextView emptyStateText;
 
-    @Nullable
+    private CategoryRepository categoryRepository;
+    private ItemRepository itemRepository;
+
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_home, container, false);
     }
 
@@ -52,149 +49,153 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        Log.d(TAG, "HomeFragment created");
-
         initViews(view);
-        initServices();
-        setupClickListeners();
+        initRepositories();
         setupRecyclerViews();
+        setupSwipeRefresh();
         loadData();
     }
 
     private void initViews(View view) {
-        searchLayout = view.findViewById(R.id.searchLayout);
         categoriesRecyclerView = view.findViewById(R.id.categoriesRecyclerView);
         featuredRecyclerView = view.findViewById(R.id.featuredRecyclerView);
-        recentListingsRecyclerView = view.findViewById(R.id.recentListingsRecyclerView);
+        recentRecyclerView = view.findViewById(R.id.recentRecyclerView);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        emptyStateText = view.findViewById(R.id.emptyStateText);
     }
 
-    private void initServices() {
-        apiService = ApiClient.getApiService();
-    }
-
-    private void setupClickListeners() {
-        if (searchLayout != null) {
-            searchLayout.setOnClickListener(v -> {
-                if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).navigateToSearch();
-                }
-            });
-        }
+    private void initRepositories() {
+        categoryRepository = new CategoryRepository();
+        itemRepository = new ItemRepository();
     }
 
     private void setupRecyclerViews() {
         // Categories RecyclerView
-        if (categoriesRecyclerView != null) {
-            categoryAdapter = new CategoryAdapter(requireContext());
-            categoriesRecyclerView.setLayoutManager(
-                    new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-            );
-            categoriesRecyclerView.setAdapter(categoryAdapter);
+        categoriesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        categoryAdapter = new CategoryAdapter(getContext());
+        categoryAdapter.setOnCategoryClickListener(this);
+        categoriesRecyclerView.setAdapter(categoryAdapter);
 
-            categoryAdapter.setOnCategoryClickListener((category, position) -> {
-                Log.d(TAG, "Category clicked: " + category.getName());
-                // ✅ FIXED: Navigate to search with category filter
-                if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).navigateToSearch(category.getName());
-                }
-            });
-        }
+        // Featured items RecyclerView
+        featuredRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        featuredAdapter = new ListingAdapter(getContext());
+        featuredAdapter.setOnListingClickListener(this);
+        featuredRecyclerView.setAdapter(featuredAdapter);
 
-        // Featured RecyclerView
-        if (featuredRecyclerView != null) {
-            featuredAdapter = new ListingAdapter(requireContext(), new ArrayList<>());
-            featuredRecyclerView.setLayoutManager(
-                    new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-            );
-            featuredRecyclerView.setAdapter(featuredAdapter);
+        // Recent items RecyclerView
+        recentRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        recentAdapter = new ListingAdapter(getContext());
+        recentAdapter.setOnListingClickListener(this);
+        recentRecyclerView.setAdapter(recentAdapter);
+    }
 
-            featuredAdapter.setOnItemClickListener(item -> {
-                Log.d(TAG, "Featured item clicked: " + item.getTitle());
-                if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).navigateToItemDetail(item.getId());
-                }
-            });
-        }
-
-        // Recent Listings RecyclerView
-        if (recentListingsRecyclerView != null) {
-            recentAdapter = new ListingAdapter(requireContext(), new ArrayList<>());
-            recentListingsRecyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-            recentListingsRecyclerView.setAdapter(recentAdapter);
-
-            recentAdapter.setOnItemClickListener(item -> {
-                Log.d(TAG, "Recent item clicked: " + item.getTitle());
-                if (getActivity() instanceof MainActivity) {
-                    ((MainActivity) getActivity()).navigateToItemDetail(item.getId());
-                }
-            });
-        }
+    private void setupSwipeRefresh() {
+        swipeRefreshLayout.setOnRefreshListener(this::loadData);
+        swipeRefreshLayout.setColorSchemeResources(R.color.primary);
     }
 
     private void loadData() {
+        swipeRefreshLayout.setRefreshing(true);
         loadCategories();
-        loadItems();
+        loadFeaturedItems();
+        loadRecentItems();
     }
 
     private void loadCategories() {
-        Log.d(TAG, "Loading categories");
-
-        apiService.getAllCategories().enqueue(new Callback<ApiResponse<List<Category>>>() {
+        categoryRepository.getCategories(new CategoryRepository.CategoriesCallback() {
             @Override
-            public void onResponse(Call<ApiResponse<List<Category>>> call, Response<ApiResponse<List<Category>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<Category>> apiResponse = response.body();
-                    if (apiResponse.isSuccess() && apiResponse.getData() != null) {
-                        Log.d(TAG, "Categories loaded: " + apiResponse.getData().size());
-                        if (categoryAdapter != null) {
-                            categoryAdapter.setCategories(apiResponse.getData());
-                        }
-                    } else {
-                        Log.e(TAG, "Categories API error: " + apiResponse.getMessage());
-                    }
-                } else {
-                    Log.e(TAG, "Categories API call failed: " + response.code());
+            public void onSuccess(List<Category> categories) {
+                if (getActivity() != null && isAdded()) {
+                    Log.d(TAG, "Loaded " + categories.size() + " categories");
+                    categoryAdapter.setCategories(categories);
                 }
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<List<Category>>> call, Throwable t) {
-                Log.e(TAG, "Categories API call failed: " + t.getMessage());
+            public void onError(String error) {
+                if (getActivity() != null && isAdded()) {
+                    Log.e(TAG, "Error loading categories: " + error);
+                    showError("Failed to load categories: " + error);
+                }
             }
         });
     }
 
-    private void loadItems() {
-        Log.d(TAG, "Loading items");
-
-        apiService.getAllItems().enqueue(new Callback<ApiResponse<List<Item>>>() {
+    private void loadFeaturedItems() {
+        itemRepository.getFeaturedItems(new ItemRepository.ItemsCallback() {
             @Override
-            public void onResponse(Call<ApiResponse<List<Item>>> call, Response<ApiResponse<List<Item>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<Item>> apiResponse = response.body();
-                    if (apiResponse.isSuccess() && apiResponse.getData() != null) {
-                        List<Item> items = apiResponse.getData();
-                        Log.d(TAG, "Items loaded: " + items.size());
-
-                        // ✅ FIXED: Update adapters safely
-                        if (featuredAdapter != null) {
-                            featuredAdapter.updateItems(items);
-                        }
-                        if (recentAdapter != null) {
-                            recentAdapter.updateItems(items);
-                        }
-                    } else {
-                        Log.e(TAG, "Items API error: " + apiResponse.getMessage());
-                    }
-                } else {
-                    Log.e(TAG, "Items API call failed: " + response.code());
+            public void onSuccess(List<Listing> items) {
+                if (getActivity() != null && isAdded()) {
+                    Log.d(TAG, "Loaded " + items.size() + " featured items");
+                    featuredAdapter.setListings(items);
+                    checkEmptyState();
                 }
             }
 
             @Override
-            public void onFailure(Call<ApiResponse<List<Item>>> call, Throwable t) {
-                Log.e(TAG, "Items API call failed: " + t.getMessage());
+            public void onError(String error) {
+                if (getActivity() != null && isAdded()) {
+                    Log.e(TAG, "Error loading featured items: " + error);
+                    showError("Failed to load featured items: " + error);
+                    checkEmptyState();
+                }
             }
         });
+    }
+
+    private void loadRecentItems() {
+        itemRepository.getRecentItems(new ItemRepository.ItemsCallback() {
+            @Override
+            public void onSuccess(List<Listing> items) {
+                if (getActivity() != null && isAdded()) {
+                    Log.d(TAG, "Loaded " + items.size() + " recent items");
+                    recentAdapter.setListings(items);
+                    swipeRefreshLayout.setRefreshing(false);
+                    checkEmptyState();
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                if (getActivity() != null && isAdded()) {
+                    Log.e(TAG, "Error loading recent items: " + error);
+                    showError("Failed to load recent items: " + error);
+                    swipeRefreshLayout.setRefreshing(false);
+                    checkEmptyState();
+                }
+            }
+        });
+    }
+
+    private void checkEmptyState() {
+        boolean hasData = (featuredAdapter.getItemCount() > 0) || (recentAdapter.getItemCount() > 0);
+        emptyStateText.setVisibility(hasData ? View.GONE : View.VISIBLE);
+    }
+
+    private void showError(String message) {
+        if (getContext() != null) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // OnListingClickListener implementation
+    @Override
+    public void onListingClick(Listing listing) {
+        Intent intent = new Intent(getActivity(), ItemDetailActivity.class);
+        intent.putExtra("item_id", listing.getId());
+        startActivity(intent);
+    }
+
+    @Override
+    public void onFavoriteClick(Listing listing, int position) {
+        // TODO: Implement favorite functionality
+        showError("Favorite feature coming soon!");
+    }
+
+    // OnCategoryClickListener implementation
+    @Override
+    public void onCategoryClick(Category category, int position) {
+        // TODO: Navigate to category items
+        showError("Category view coming soon!");
     }
 }

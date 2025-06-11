@@ -9,14 +9,13 @@ public class GoogleAuthRequest {
 
     public GoogleAuthRequest() {}
 
-    public GoogleAuthRequest(String idToken, String email, String fullName, String profileImageUrl) {
+    public GoogleAuthRequest(String idToken, String email, String fullName) {
         this.idToken = idToken;
         this.email = email;
         this.fullName = fullName;
-        this.profileImageUrl = profileImageUrl;
     }
 
-    // Getters and setters
+    // Getters and Setters
     public String getIdToken() { return idToken; }
     public void setIdToken(String idToken) { this.idToken = idToken; }
 

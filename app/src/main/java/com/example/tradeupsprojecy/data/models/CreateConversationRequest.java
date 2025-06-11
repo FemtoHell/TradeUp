@@ -1,5 +1,5 @@
 // app/src/main/java/com/example/tradeupsprojecy/data/models/request/CreateConversationRequest.java
-package com.example.tradeupsprojecy.data.models.request;
+package com.example.tradeupsprojecy.data.models;
 
 public class CreateConversationRequest {
     private Long itemId;
