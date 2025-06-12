@@ -1,9 +1,10 @@
+// app/src/main/java/com/example/tradeupsprojecy/data/repository/UserRepository.java
 package com.example.tradeupsprojecy.data.repository;
 
 import android.util.Log;
 import com.example.tradeupsprojecy.data.models.User;
-import com.example.tradeupsprojecy.data.models.ApiResponse; // FIX: Import đúng
-import com.example.tradeupsprojecy.data.network.ApiService; // FIX: Bỏ 's'
+import com.example.tradeupsprojecy.data.models.response.ApiResponse;
+import com.example.tradeupsprojecy.data.network.ApiService; // FIX: Đúng package
 import com.example.tradeupsprojecy.data.network.NetworkClient;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -12,10 +13,10 @@ import retrofit2.Response;
 public class UserRepository {
 
     private static final String TAG = "UserRepository";
-    private ApiService apiService; // FIX: Bỏ 's'
+    private ApiService apiService;
 
     public UserRepository() {
-        this.apiService = NetworkClient.getApiService(); // FIX: Bỏ 's'
+        this.apiService = NetworkClient.getApiService();
     }
 
     // Interface for callbacks
@@ -30,7 +31,7 @@ public class UserRepository {
     }
 
     // Get user profile
-    public void getUserProfile(String token, UserCallback callback) { // FIX: Bỏ userId parameter vì có thể lấy từ token
+    public void getUserProfile(String token, UserCallback callback) {
         Call<ApiResponse<User>> call = apiService.getProfile("Bearer " + token);
         call.enqueue(new Callback<ApiResponse<User>>() {
             @Override
@@ -56,12 +57,6 @@ public class UserRepository {
                 callback.onError("Lỗi kết nối mạng");
             }
         });
-    }
-
-    // Update user profile (method này chưa có trong ApiService, cần thêm sau)
-    public void updateUserProfile(String token, User user, UserProfileCallback callback) {
-        // Tạm thời comment out vì chưa có API endpoint
-        callback.onError("Chức năng cập nhật profile chưa được implement");
     }
 
     // Handle HTTP error codes

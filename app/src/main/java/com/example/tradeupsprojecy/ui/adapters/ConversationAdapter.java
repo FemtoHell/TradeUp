@@ -1,6 +1,6 @@
+// ConversationAdapter.java
 package com.example.tradeupsprojecy.ui.adapters;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,69 +9,97 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.CircleCrop;
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Conversation;
-import com.example.tradeupsprojecy.utils.DateUtils;
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapter.ConversationViewHolder> {
 
-    private Context context;
     private List<Conversation> conversations;
-    private OnConversationClickListener listener;
+    private OnConversationClickListener onConversationClickListener;
 
     public interface OnConversationClickListener {
         void onConversationClick(Conversation conversation);
-        void onConversationLongClick(Conversation conversation);
     }
 
-    public ConversationAdapter(Context context) {
-        this.context = context;
-        this.conversations = new ArrayList<>();
+    public ConversationAdapter(List<Conversation> conversations, OnConversationClickListener listener) {
+        this.conversations = conversations;
+        this.onConversationClickListener = listener;
     }
 
     public void setOnConversationClickListener(OnConversationClickListener listener) {
-        this.listener = listener;
+        this.onConversationClickListener = listener;
     }
 
-    public void setConversations(List<Conversation> conversations) {
-        this.conversations = conversations != null ? conversations : new ArrayList<>();
+    public void updateConversations(List<Conversation> newConversations) {
+        this.conversations = newConversations;
         notifyDataSetChanged();
-    }
-
-    public void addConversation(Conversation conversation) {
-        if (conversation != null) {
-            this.conversations.add(0, conversation);
-            notifyItemInserted(0);
-        }
-    }
-
-    public void updateConversation(Conversation updatedConversation) {
-        if (updatedConversation == null || updatedConversation.getId() == null) return;
-
-        for (int i = 0; i < conversations.size(); i++) {
-            Conversation conv = conversations.get(i);
-            if (conv != null && conv.getId() != null &&
-                    conv.getId().equals(updatedConversation.getId())) {
-                conversations.set(i, updatedConversation);
-                notifyItemChanged(i);
-                break;
-            }
-        }
     }
 
     @NonNull
     @Override
     public ConversationViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_conversation, parent, false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_conversation, parent, false);
         return new ConversationViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ConversationViewHolder holder, int position) {
         Conversation conversation = conversations.get(position);
-        holder.bind(conversation);
+
+        // User avatar
+        if (conversation.getOtherUserAvatar() != null && !conversation.getOtherUserAvatar().isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(conversation.getOtherUserAvatar())
+                    .transform(new CircleCrop())
+                    .placeholder(R.drawable.ic_person_placeholder)
+                    .into(holder.avatarImageView);
+        } else {
+            holder.avatarImageView.setImageResource(R.drawable.ic_person_placeholder);
+        }
+
+        // User name
+        holder.userNameTextView.setText(conversation.getOtherUserName() != null ?
+                conversation.getOtherUserName() : "Unknown User");
+
+        // Item title
+        holder.itemTitleTextView.setText(conversation.getListingTitle() != null ?
+                conversation.getListingTitle() : "Unknown Item");
+
+        // Last message
+        holder.lastMessageTextView.setText(conversation.getLastMessage() != null ?
+                conversation.getLastMessage() : "No messages yet");
+
+        // Time
+        if (conversation.getLastMessageTime() != null) {
+            String timeText = formatTime(conversation.getLastMessageTime());
+            holder.timeTextView.setText(timeText);
+        } else {
+            holder.timeTextView.setText("");
+        }
+
+        // Unread indicator
+        if (conversation.getUnreadCount() != null && conversation.getUnreadCount() > 0) {
+            holder.unreadIndicator.setVisibility(View.VISIBLE);
+            if (holder.unreadIndicator instanceof TextView) {
+                ((TextView) holder.unreadIndicator).setText(String.valueOf(conversation.getUnreadCount()));
+            }
+        } else {
+            holder.unreadIndicator.setVisibility(View.GONE);
+        }
+
+        // Click listener
+        holder.itemView.setOnClickListener(v -> {
+            if (onConversationClickListener != null) {
+                onConversationClickListener.onConversationClick(conversation);
+            }
+        });
     }
 
     @Override
@@ -79,118 +107,42 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
         return conversations.size();
     }
 
-    class ConversationViewHolder extends RecyclerView.ViewHolder {
+    private String formatTime(LocalDateTime dateTime) {
+        if (dateTime == null) return "";
 
-        // FIX: Match với IDs trong item_conversation.xml
-        private ImageView avatarImageView;
-        private TextView nameTextView;
-        private TextView lastMessageTextView;
-        private TextView timeTextView;
-        private TextView unreadCountTextView;
-        private TextView itemTitleTextView;
+        Date date = Date.from(dateTime.atZone(ZoneId.systemDefault()).toInstant());
+        long now = System.currentTimeMillis();
+        long messageTime = date.getTime();
+        long diff = now - messageTime;
+
+        if (diff < 60 * 1000) { // Less than 1 minute
+            return "now";
+        } else if (diff < 60 * 60 * 1000) { // Less than 1 hour
+            return (diff / (60 * 1000)) + "m";
+        } else if (diff < 24 * 60 * 60 * 1000) { // Less than 1 day
+            return (diff / (60 * 60 * 1000)) + "h";
+        } else {
+            SimpleDateFormat sdf = new SimpleDateFormat("MMM dd", Locale.getDefault());
+            return sdf.format(date);
+        }
+    }
+
+    static class ConversationViewHolder extends RecyclerView.ViewHolder {
+        ImageView avatarImageView;
+        TextView userNameTextView;
+        TextView itemTitleTextView;
+        TextView lastMessageTextView;
+        TextView timeTextView;
+        View unreadIndicator;
 
         public ConversationViewHolder(@NonNull View itemView) {
             super(itemView);
-
-            // FIX: Sử dụng đúng ID từ layout
             avatarImageView = itemView.findViewById(R.id.avatarImageView);
-            nameTextView = itemView.findViewById(R.id.nameTextView);
+            userNameTextView = itemView.findViewById(R.id.nameTextView);
+            itemTitleTextView = itemView.findViewById(R.id.itemTitleTextView);
             lastMessageTextView = itemView.findViewById(R.id.lastMessageTextView);
             timeTextView = itemView.findViewById(R.id.timeTextView);
-            unreadCountTextView = itemView.findViewById(R.id.unreadCountTextView);
-            itemTitleTextView = itemView.findViewById(R.id.itemTitleTextView);
-
-            // Click listeners
-            itemView.setOnClickListener(v -> {
-                if (listener != null) {
-                    int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION && position < conversations.size()) {
-                        listener.onConversationClick(conversations.get(position));
-                    }
-                }
-            });
-
-            itemView.setOnLongClickListener(v -> {
-                if (listener != null) {
-                    int position = getAdapterPosition();
-                    if (position != RecyclerView.NO_POSITION && position < conversations.size()) {
-                        listener.onConversationLongClick(conversations.get(position));
-                        return true;
-                    }
-                }
-                return false;
-            });
-        }
-
-        public void bind(Conversation conversation) {
-            if (conversation == null) return;
-
-            // Set user info
-            if (nameTextView != null) {
-                nameTextView.setText(conversation.getOtherUserName() != null ?
-                        conversation.getOtherUserName() : "Unknown User");
-            }
-
-            // Load user avatar
-            if (avatarImageView != null) {
-                if (conversation.getOtherUserAvatar() != null &&
-                        !conversation.getOtherUserAvatar().isEmpty()) {
-                    try {
-                        Glide.with(context)
-                                .load(conversation.getOtherUserAvatar())
-                                .placeholder(android.R.drawable.ic_menu_report_image)
-                                .error(android.R.drawable.ic_menu_report_image)
-                                .circleCrop()
-                                .into(avatarImageView);
-                    } catch (Exception e) {
-                        avatarImageView.setImageResource(android.R.drawable.ic_menu_report_image);
-                    }
-                } else {
-                    avatarImageView.setImageResource(android.R.drawable.ic_menu_report_image);
-                }
-            }
-
-            // Set last message
-            if (lastMessageTextView != null) {
-                if (conversation.getLastMessage() != null &&
-                        !conversation.getLastMessage().isEmpty()) {
-                    lastMessageTextView.setText(conversation.getLastMessage());
-                } else {
-                    lastMessageTextView.setText("Chưa có tin nhắn");
-                }
-            }
-
-            // Set time
-            if (timeTextView != null) {
-                if (conversation.getLastMessageTime() != null) {
-                    timeTextView.setText(DateUtils.formatConversationTime(conversation.getLastMessageTime()));
-                } else {
-                    timeTextView.setText("2m ago");
-                }
-            }
-
-            // Set unread count
-            if (unreadCountTextView != null) {
-                Integer unreadCount = conversation.getUnreadCount();
-                if (unreadCount != null && unreadCount > 0) {
-                    unreadCountTextView.setVisibility(View.VISIBLE);
-                    unreadCountTextView.setText(String.valueOf(unreadCount));
-                } else {
-                    unreadCountTextView.setVisibility(View.GONE);
-                }
-            }
-
-            // Set listing title
-            if (itemTitleTextView != null) {
-                if (conversation.getListingTitle() != null &&
-                        !conversation.getListingTitle().isEmpty()) {
-                    itemTitleTextView.setText(conversation.getListingTitle());
-                    itemTitleTextView.setVisibility(View.VISIBLE);
-                } else {
-                    itemTitleTextView.setText("iPhone 12 Pro Max"); // Default for demo
-                    itemTitleTextView.setVisibility(View.VISIBLE);
-                }
-            }
+            unreadIndicator = itemView.findViewById(R.id.unreadCountTextView);
         }
     }
 }

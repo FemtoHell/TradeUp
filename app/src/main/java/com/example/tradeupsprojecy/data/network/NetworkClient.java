@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/tradeupsprojecy/data/network/NetworkClient.java
 package com.example.tradeupsprojecy.data.network;
 
 import retrofit2.Retrofit;
@@ -9,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 public class NetworkClient {
     // Spring Boot backend URL
     private static final String BASE_URL = "http://10.0.2.2:8080/api/"; // For emulator
-    // private static final String BASE_URL = "http://192.168.1.100:8080/api/"; // For real device (replace with your IP)
+    // private static final String BASE_URL = "http://192.168.1.100:8080/api/"; // For real device
 
     private static Retrofit retrofit;
 
@@ -34,7 +35,6 @@ public class NetworkClient {
         return retrofit;
     }
 
-    // FIX: Đổi tên method cho nhất quán
     public static ApiService getApiService() {
         return getRetrofitInstance().create(ApiService.class);
     }

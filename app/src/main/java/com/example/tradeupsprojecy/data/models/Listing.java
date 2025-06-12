@@ -1,7 +1,9 @@
+// app/src/main/java/com/example/tradeupsprojecy/data/models/Listing.java
 package com.example.tradeupsprojecy.data.models;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Listing {
@@ -9,23 +11,27 @@ public class Listing {
     private String title;
     private String description;
     private BigDecimal price;
-    private Boolean isNegotiable = false;
     private String condition;
-    private String status = "ACTIVE";
     private String location;
-    private Double latitude;
-    private Double longitude;
+    private List<String> images;
     private List<String> imageUrls;
-    private List<String> tags;
-    private Integer viewCount = 0;
-    private Boolean isFeatured = false;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private User user;
-    private Category category;
+    private Long sellerId;
+    private String sellerName;
+    private String sellerPhone;
+    private String sellerEmail;
+    private Long categoryId;
+    private String categoryName;
+    private Date createdAt;
+    private Date updatedAt;
+    private boolean isSold;
+    private boolean isFeatured;
+    private int viewCount;
+    private int likeCount;
 
-    // Constructors
-    public Listing() {}
+    public Listing() {
+        this.images = new ArrayList<>();
+        this.imageUrls = new ArrayList<>();
+    }
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -40,45 +46,70 @@ public class Listing {
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
 
-    public Boolean getIsNegotiable() { return isNegotiable; }
-    public void setIsNegotiable(Boolean isNegotiable) { this.isNegotiable = isNegotiable; }
-
     public String getCondition() { return condition; }
     public void setCondition(String condition) { this.condition = condition; }
-
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
 
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
 
-    public Double getLatitude() { return latitude; }
-    public void setLatitude(Double latitude) { this.latitude = latitude; }
+    public List<String> getImages() {
+        return images != null ? images : new ArrayList<>();
+    }
+    public void setImages(List<String> images) { this.images = images; }
 
-    public Double getLongitude() { return longitude; }
-    public void setLongitude(Double longitude) { this.longitude = longitude; }
-
-    public List<String> getImageUrls() { return imageUrls; }
+    public List<String> getImageUrls() {
+        return imageUrls != null ? imageUrls : new ArrayList<>();
+    }
     public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }
 
-    public List<String> getTags() { return tags; }
-    public void setTags(List<String> tags) { this.tags = tags; }
+    public Long getSellerId() { return sellerId; }
+    public void setSellerId(Long sellerId) { this.sellerId = sellerId; }
 
-    public Integer getViewCount() { return viewCount; }
-    public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
+    public String getSellerName() { return sellerName; }
+    public void setSellerName(String sellerName) { this.sellerName = sellerName; }
 
-    public Boolean getIsFeatured() { return isFeatured; }
-    public void setIsFeatured(Boolean isFeatured) { this.isFeatured = isFeatured; }
+    public String getSellerPhone() { return sellerPhone; }
+    public void setSellerPhone(String sellerPhone) { this.sellerPhone = sellerPhone; }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getSellerEmail() { return sellerEmail; }
+    public void setSellerEmail(String sellerEmail) { this.sellerEmail = sellerEmail; }
 
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
 
-    public Category getCategory() { return category; }
-    public void setCategory(Category category) { this.category = category; }
+    public Date getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
+
+    public Date getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Date updatedAt) { this.updatedAt = updatedAt; }
+
+    public boolean isSold() { return isSold; }
+    public void setSold(boolean sold) { isSold = sold; }
+
+    public boolean isFeatured() { return isFeatured; }
+    public void setFeatured(boolean featured) { isFeatured = featured; }
+
+    public int getViewCount() { return viewCount; }
+    public void setViewCount(int viewCount) { this.viewCount = viewCount; }
+
+    public int getLikeCount() { return likeCount; }
+    public void setLikeCount(int likeCount) { this.likeCount = likeCount; }
+
+    // Helper method to get first image
+    public String getFirstImage() {
+        List<String> allImages = getImages();
+        if (allImages != null && !allImages.isEmpty()) {
+            return allImages.get(0);
+        }
+
+        List<String> allImageUrls = getImageUrls();
+        if (allImageUrls != null && !allImageUrls.isEmpty()) {
+            return allImageUrls.get(0);
+        }
+
+        return null;
+    }
 }

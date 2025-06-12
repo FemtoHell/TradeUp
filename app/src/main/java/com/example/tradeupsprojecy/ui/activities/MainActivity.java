@@ -1,77 +1,78 @@
+// app/src/main/java/com/example/tradeupsprojecy/ui/activities/MainActivity.java
 package com.example.tradeupsprojecy.ui.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.Toast;
-import androidx.appcompat.app.AlertDialog;
+import android.util.Log;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import com.example.tradeupsprojecy.R;
+import com.example.tradeupsprojecy.data.local.SessionManager;
 import com.example.tradeupsprojecy.ui.fragments.AddListingFragment;
 import com.example.tradeupsprojecy.ui.fragments.HomeFragment;
 import com.example.tradeupsprojecy.ui.fragments.MessagesFragment;
 import com.example.tradeupsprojecy.ui.fragments.ProfileFragment;
-import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.ui.fragments.SearchFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.example.tradeupsprojecy.data.local.SessionManager;
 
 public class MainActivity extends AppCompatActivity {
 
-    private SessionManager sessionManager;
+    private static final String TAG = "MainActivity";
+
     private BottomNavigationView bottomNavigationView;
+    private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        sessionManager = new SessionManager(this);
-
-        // Check if user is logged in FIRST
-        if (!sessionManager.isLoggedIn()) {
-            navigateToLogin();
-            return;
-        }
-
         setContentView(R.layout.activity_main);
-        setupNavigation();
+
+        Log.d(TAG, "MainActivity created");
+
+        initViews();
+        initServices();
+        checkUserSession();
+        setupBottomNavigation();
 
         // Load default fragment
         if (savedInstanceState == null) {
             loadFragment(new HomeFragment());
         }
-
-        // Welcome message
-        String userName = sessionManager.getUserName();
-        if (!userName.isEmpty()) {
-            Toast.makeText(this, "Welcome back, " + userName + "!", Toast.LENGTH_SHORT).show();
-        }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Check authentication again when activity resumes
-        if (!sessionManager.isLoggedIn()) {
-            navigateToLogin();
-        }
-    }
-
-    private void setupNavigation() {
+    private void initViews() {
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
+    }
 
+    private void initServices() {
+        sessionManager = new SessionManager(this);
+    }
+
+    private void checkUserSession() {
+        if (!sessionManager.isLoggedIn()) {
+            Log.d(TAG, "User not logged in, redirecting to LoginActivity");
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
+        Log.d(TAG, "User logged in: " + sessionManager.getUserEmail());
+    }
+
+    private void setupBottomNavigation() {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
 
             int itemId = item.getItemId();
-
             if (itemId == R.id.navigation_home) {
                 selectedFragment = new HomeFragment();
             } else if (itemId == R.id.navigation_search) {
                 selectedFragment = new SearchFragment();
-            } else if (itemId == R.id.navigation_sell) { // Đảm bảo ID này đúng
+            } else if (itemId == R.id.navigation_add) {
                 selectedFragment = new AddListingFragment();
             } else if (itemId == R.id.navigation_messages) {
                 selectedFragment = new MessagesFragment();
@@ -80,91 +81,73 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (selectedFragment != null) {
-                return loadFragment(selectedFragment);
+                loadFragment(selectedFragment);
+                return true;
             }
             return false;
         });
-
-        // Set default selection
-        bottomNavigationView.setSelectedItemId(R.id.navigation_home);
     }
 
-    private boolean loadFragment(Fragment fragment) {
-        try {
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.fragmentContainer, fragment)
-                    .commit();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    private void loadFragment(Fragment fragment) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        transaction.replace(R.id.fragmentContainer, fragment);
+        transaction.commit();
     }
 
-    private void navigateToLogin() {
-        Intent intent = new Intent(this, LoginActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.action_notifications) {
-            // Handle notifications
-            Toast.makeText(this, "Notifications clicked", Toast.LENGTH_SHORT).show();
-            return true;
-        } else if (item.getItemId() == R.id.action_logout) {
-            showLogoutDialog();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    private void showLogoutDialog() {
-        new AlertDialog.Builder(this)
-                .setTitle("Logout")
-                .setMessage("Are you sure you want to logout?")
-                .setPositiveButton("Yes", (dialog, which) -> {
-                    performLogout();
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    private void performLogout() {
-        // Clear session
-        sessionManager.logout();
-
-        // Show goodbye message
-        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
-
-        // Navigate to login
-        navigateToLogin();
-    }
     public void navigateToSearch() {
         bottomNavigationView.setSelectedItemId(R.id.navigation_search);
     }
 
+    public void navigateToSearch(String query) {
+        SearchFragment searchFragment = new SearchFragment();
+        Bundle args = new Bundle();
+        args.putString("search_query", query);
+        searchFragment.setArguments(args);
+
+        loadFragment(searchFragment);
+        bottomNavigationView.setSelectedItemId(R.id.navigation_search);
+    }
+
+    public void navigateToItemDetail(Long itemId) {
+        Intent intent = new Intent(this, ItemDetailActivity.class);
+        intent.putExtra("item_id", itemId);
+        startActivity(intent);
+    }
+
+    public void navigateToAddListing() {
+        bottomNavigationView.setSelectedItemId(R.id.navigation_add);
+    }
+
+    public void navigateToMessages() {
+        bottomNavigationView.setSelectedItemId(R.id.navigation_messages);
+    }
+
+    public void navigateToProfile() {
+        bottomNavigationView.setSelectedItemId(R.id.navigation_profile);
+    }
+
     @Override
     public void onBackPressed() {
-        // Override back button to show exit dialog
-        new AlertDialog.Builder(this)
-                .setTitle("Exit App")
-                .setMessage("Are you sure you want to exit?")
-                .setPositiveButton("Yes", (dialog, which) -> {
-                    super.onBackPressed();
-                    finishAffinity(); // Close all activities
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+        Fragment currentFragment = getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
+        if (currentFragment instanceof HomeFragment) {
+            super.onBackPressed();
+        } else {
+            bottomNavigationView.setSelectedItemId(R.id.navigation_home);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (!sessionManager.isLoggedIn()) {
+            checkUserSession();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "MainActivity destroyed");
     }
 }
-

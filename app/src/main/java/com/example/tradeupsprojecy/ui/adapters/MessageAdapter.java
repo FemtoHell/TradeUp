@@ -1,74 +1,58 @@
 package com.example.tradeupsprojecy.ui.adapters;
 
-import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.bumptech.glide.Glide;
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Message;
-import com.example.tradeupsprojecy.utils.DateUtils;
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Locale;
 
 public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private static final int VIEW_TYPE_SENT = 1;
-    private static final int VIEW_TYPE_RECEIVED = 2;
+    private static final int TYPE_MESSAGE_SENT = 1;
+    private static final int TYPE_MESSAGE_RECEIVED = 2;
 
-    private Context context;
     private List<Message> messages;
-    private String currentUserId;
+    private final String currentUserId;
 
-    public MessageAdapter(Context context, String currentUserId) {
-        this.context = context;
-        this.currentUserId = currentUserId != null ? currentUserId : "";
-        this.messages = new ArrayList<>();
+    public MessageAdapter(List<Message> messages, String currentUserId) {
+        this.messages = messages;
+        this.currentUserId = currentUserId;
     }
 
-    public void setMessages(List<Message> messages) {
-        this.messages = messages != null ? messages : new ArrayList<>();
+    public void updateMessages(List<Message> newMessages) {
+        this.messages = newMessages;
         notifyDataSetChanged();
     }
 
     public void addMessage(Message message) {
-        if (message != null) {
-            this.messages.add(message);
-            notifyItemInserted(messages.size() - 1);
-        }
-    }
-
-    public void addMessages(List<Message> newMessages) {
-        if (newMessages != null && !newMessages.isEmpty()) {
-            int startPosition = this.messages.size();
-            this.messages.addAll(newMessages);
-            notifyItemRangeInserted(startPosition, newMessages.size());
-        }
+        this.messages.add(message);
+        notifyItemInserted(messages.size() - 1);
     }
 
     @Override
     public int getItemViewType(int position) {
         Message message = messages.get(position);
-        if (message != null && message.getSenderId() != null &&
-                message.getSenderId().equals(currentUserId)) {
-            return VIEW_TYPE_SENT;
+        if (String.valueOf(message.getSenderId()).equals(currentUserId)) {
+            return TYPE_MESSAGE_SENT;
         } else {
-            return VIEW_TYPE_RECEIVED;
+            return TYPE_MESSAGE_RECEIVED;
         }
     }
 
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == VIEW_TYPE_SENT) {
-            View view = LayoutInflater.from(context).inflate(R.layout.item_message_sent, parent, false);
+        if (viewType == TYPE_MESSAGE_SENT) {
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_sent, parent, false);
             return new SentMessageViewHolder(view);
         } else {
-            View view = LayoutInflater.from(context).inflate(R.layout.item_message_received, parent, false);
+            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_message_received, parent, false);
             return new ReceivedMessageViewHolder(view);
         }
     }
@@ -76,7 +60,6 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         Message message = messages.get(position);
-        if (message == null) return;
 
         if (holder instanceof SentMessageViewHolder) {
             ((SentMessageViewHolder) holder).bind(message);
@@ -90,12 +73,17 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         return messages.size();
     }
 
-    // Sent message ViewHolder
-    class SentMessageViewHolder extends RecyclerView.ViewHolder {
+    private String formatTime(Message message) {
+        if (message.getTimestamp() != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            return sdf.format(message.getTimestamp());
+        }
+        return "";
+    }
 
-        // FIX: Match với IDs trong item_message_sent.xml
-        private TextView messageTextView;
-        private TextView timeTextView;
+    class SentMessageViewHolder extends RecyclerView.ViewHolder {
+        TextView messageTextView;
+        TextView timeTextView;
 
         public SentMessageViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -104,30 +92,14 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         public void bind(Message message) {
-            if (message == null) return;
-
-            // Set message content
-            if (messageTextView != null) {
-                messageTextView.setText(message.getContent() != null ? message.getContent() : "");
-            }
-
-            // Set time
-            if (timeTextView != null) {
-                if (message.getCreatedAt() != null) {
-                    timeTextView.setText(DateUtils.formatMessageTime(message.getCreatedAt()));
-                } else {
-                    timeTextView.setText("");
-                }
-            }
+            messageTextView.setText(message.getContent());
+            timeTextView.setText(formatTime(message));
         }
     }
 
-    // Received message ViewHolder
     class ReceivedMessageViewHolder extends RecyclerView.ViewHolder {
-
-        // FIX: Match với IDs trong item_message_received.xml
-        private TextView messageTextView;
-        private TextView timeTextView;
+        TextView messageTextView;
+        TextView timeTextView;
 
         public ReceivedMessageViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -136,21 +108,8 @@ public class MessageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
 
         public void bind(Message message) {
-            if (message == null) return;
-
-            // Set message content
-            if (messageTextView != null) {
-                messageTextView.setText(message.getContent() != null ? message.getContent() : "");
-            }
-
-            // Set time
-            if (timeTextView != null) {
-                if (message.getCreatedAt() != null) {
-                    timeTextView.setText(DateUtils.formatMessageTime(message.getCreatedAt()));
-                } else {
-                    timeTextView.setText("");
-                }
-            }
+            messageTextView.setText(message.getContent());
+            timeTextView.setText(formatTime(message));
         }
     }
 }
