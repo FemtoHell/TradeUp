@@ -1,4 +1,4 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/fragments/HomeFragment.java
+// app/src/main/java/com/example/tradeupsprojecy/ui/fragments/HomeFragment.java - UPDATE
 package com.example.tradeupsprojecy.ui.fragments;
 
 import android.content.Intent;
@@ -17,23 +17,22 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Category;
-import com.example.tradeupsprojecy.data.models.Listing;
+import com.example.tradeupsprojecy.data.models.Item;
 import com.example.tradeupsprojecy.data.repository.CategoryRepository;
 import com.example.tradeupsprojecy.data.repository.ItemRepository;
 import com.example.tradeupsprojecy.ui.activities.ItemDetailActivity;
 import com.example.tradeupsprojecy.ui.adapters.CategoryAdapter;
-import com.example.tradeupsprojecy.ui.adapters.ListingAdapter;
-import com.example.tradeupsprojecy.ui.adapters.OnListingClickListener;
+import com.example.tradeupsprojecy.ui.adapters.ItemAdapter;
 import com.google.android.material.textview.MaterialTextView;
 import java.util.List;
 
-public class HomeFragment extends Fragment implements OnListingClickListener, CategoryAdapter.OnCategoryClickListener {
+public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickListener, CategoryAdapter.OnCategoryClickListener {
 
     private static final String TAG = "HomeFragment";
 
     private RecyclerView categoriesRecyclerView, featuredRecyclerView, recentRecyclerView;
     private CategoryAdapter categoryAdapter;
-    private ListingAdapter featuredAdapter, recentAdapter;
+    private ItemAdapter featuredAdapter, recentAdapter;
     private SwipeRefreshLayout swipeRefreshLayout;
     private MaterialTextView emptyStateText;
 
@@ -78,14 +77,14 @@ public class HomeFragment extends Fragment implements OnListingClickListener, Ca
 
         // Featured items RecyclerView
         featuredRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
-        featuredAdapter = new ListingAdapter(getContext());
-        featuredAdapter.setOnListingClickListener(this);
+        featuredAdapter = new ItemAdapter(getContext());
+        featuredAdapter.setOnItemClickListener(this);
         featuredRecyclerView.setAdapter(featuredAdapter);
 
         // Recent items RecyclerView
         recentRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
-        recentAdapter = new ListingAdapter(getContext());
-        recentAdapter.setOnListingClickListener(this);
+        recentAdapter = new ItemAdapter(getContext());
+        recentAdapter.setOnItemClickListener(this);
         recentRecyclerView.setAdapter(recentAdapter);
     }
 
@@ -95,6 +94,7 @@ public class HomeFragment extends Fragment implements OnListingClickListener, Ca
     }
 
     private void loadData() {
+        Log.d(TAG, "Loading data...");
         swipeRefreshLayout.setRefreshing(true);
         loadCategories();
         loadFeaturedItems();
@@ -124,10 +124,10 @@ public class HomeFragment extends Fragment implements OnListingClickListener, Ca
     private void loadFeaturedItems() {
         itemRepository.getFeaturedItems(new ItemRepository.ItemsCallback() {
             @Override
-            public void onSuccess(List<Listing> items) {
+            public void onSuccess(List<Item> items) {
                 if (getActivity() != null && isAdded()) {
                     Log.d(TAG, "Loaded " + items.size() + " featured items");
-                    featuredAdapter.setListings(items);
+                    featuredAdapter.setItems(items);
                     checkEmptyState();
                 }
             }
@@ -146,10 +146,10 @@ public class HomeFragment extends Fragment implements OnListingClickListener, Ca
     private void loadRecentItems() {
         itemRepository.getRecentItems(new ItemRepository.ItemsCallback() {
             @Override
-            public void onSuccess(List<Listing> items) {
+            public void onSuccess(List<Item> items) {
                 if (getActivity() != null && isAdded()) {
                     Log.d(TAG, "Loaded " + items.size() + " recent items");
-                    recentAdapter.setListings(items);
+                    recentAdapter.setItems(items);
                     swipeRefreshLayout.setRefreshing(false);
                     checkEmptyState();
                 }
@@ -178,24 +178,22 @@ public class HomeFragment extends Fragment implements OnListingClickListener, Ca
         }
     }
 
-    // OnListingClickListener implementation
+    // ItemAdapter.OnItemClickListener implementation
     @Override
-    public void onListingClick(Listing listing) {
+    public void onItemClick(Item item) {
         Intent intent = new Intent(getActivity(), ItemDetailActivity.class);
-        intent.putExtra("item_id", listing.getId());
+        intent.putExtra("item_id", item.getId());
         startActivity(intent);
     }
 
     @Override
-    public void onFavoriteClick(Listing listing, int position) {
-        // TODO: Implement favorite functionality
+    public void onFavoriteClick(Item item, int position) {
         showError("Favorite feature coming soon!");
     }
 
-    // OnCategoryClickListener implementation
+    // CategoryAdapter.OnCategoryClickListener implementation
     @Override
     public void onCategoryClick(Category category, int position) {
-        // TODO: Navigate to category items
         showError("Category view coming soon!");
     }
 }

@@ -1,4 +1,4 @@
-// app/src/main/java/com/example/tradeupsprojecy/data/network/ApiService.java
+// app/src/main/java/com/example/tradeupsprojecy/data/network/ApiService.java - ADD MISSING ENDPOINTS
 package com.example.tradeupsprojecy.data.network;
 
 import com.example.tradeupsprojecy.data.models.*;
@@ -7,11 +7,8 @@ import com.example.tradeupsprojecy.data.models.request.*;
 import retrofit2.Call;
 import retrofit2.http.*;
 import java.util.List;
-import java.util.Map;
 
 public interface ApiService {
-
-
 
     // ============= AUTH ENDPOINTS =============
     @POST("auth/login")
@@ -26,12 +23,12 @@ public interface ApiService {
     @GET("auth/profile")
     Call<ApiResponse<User>> getProfile(@Header("Authorization") String token);
 
-    @POST("auth/logout")
-    Call<ApiResponse<Void>> logout(@Header("Authorization") String token);
-
     // ============= ITEMS ENDPOINTS =============
     @GET("items")
-    Call<ApiResponse<List<Listing>>> getAllItems(
+    Call<ApiResponse<List<Item>>> getAllItems();
+
+    @GET("items")
+    Call<ApiResponse<List<Item>>> getAllItems(
             @Query("page") int page,
             @Query("size") int size,
             @Query("sortBy") String sortBy,
@@ -39,19 +36,19 @@ public interface ApiService {
     );
 
     @GET("items/{id}")
-    Call<ApiResponse<Listing>> getItemById(@Path("id") Long id);
+    Call<ApiResponse<Item>> getItemById(@Path("id") Long id);
 
     @POST("items")
-    Call<ApiResponse<Listing>> createItem(
+    Call<ApiResponse<Item>> createItem(
             @Header("Authorization") String token,
             @Body CreateItemRequest request
     );
 
     @PUT("items/{id}")
-    Call<ApiResponse<Listing>> updateItem(
+    Call<ApiResponse<Item>> updateItem(
             @Path("id") Long id,
             @Header("Authorization") String token,
-            @Body Listing item
+            @Body Item item
     );
 
     @DELETE("items/{id}")
@@ -61,25 +58,25 @@ public interface ApiService {
     );
 
     @GET("items/category/{categoryId}")
-    Call<ApiResponse<List<Listing>>> getItemsByCategory(@Path("categoryId") Long categoryId);
+    Call<ApiResponse<List<Item>>> getItemsByCategory(@Path("categoryId") Long categoryId);
 
     @GET("items/seller/{sellerId}")
-    Call<ApiResponse<List<Listing>>> getItemsBySeller(@Path("sellerId") Long sellerId);
+    Call<ApiResponse<List<Item>>> getItemsBySeller(@Path("sellerId") Long sellerId);
 
     @GET("items/my-items")
-    Call<ApiResponse<List<Listing>>> getMyItems(@Header("Authorization") String token);
+    Call<ApiResponse<List<Item>>> getMyItems(@Header("Authorization") String token);
 
     @GET("items/search")
-    Call<ApiResponse<List<Listing>>> searchItems(@Query("keyword") String keyword);
+    Call<ApiResponse<List<Item>>> searchItems(@Query("keyword") String keyword);
 
     @GET("items/featured")
-    Call<ApiResponse<List<Listing>>> getFeaturedItems();
+    Call<ApiResponse<List<Item>>> getFeaturedItems();
 
     @GET("items/recent")
-    Call<ApiResponse<List<Listing>>> getRecentItems();
+    Call<ApiResponse<List<Item>>> getRecentItems();
 
     @PUT("items/{id}/mark-sold")
-    Call<ApiResponse<Listing>> markItemAsSold(
+    Call<ApiResponse<Item>> markItemAsSold(
             @Path("id") Long id,
             @Header("Authorization") String token
     );
@@ -91,13 +88,7 @@ public interface ApiService {
     @GET("categories/all")
     Call<ApiResponse<List<Category>>> getAllCategories();
 
-    @POST("categories")
-    Call<ApiResponse<Category>> createCategory(
-            @Header("Authorization") String token,
-            @Body Category category
-    );
-
-    // ============= MESSAGES/CONVERSATIONS ENDPOINTS =============
+    // ============= CONVERSATIONS/MESSAGES ENDPOINTS - ✅ ADD MISSING =============
     @POST("conversations")
     Call<ApiResponse<Conversation>> createConversation(
             @Header("Authorization") String token,
@@ -119,5 +110,19 @@ public interface ApiService {
             @Body SendMessageRequest request
     );
 
+    // ============= ALTERNATIVE MESSAGE ENDPOINTS =============
+    @POST("messages/send")
+    Call<ApiResponse<Message>> sendDirectMessage(
+            @Header("Authorization") String token,
+            @Body SendMessageRequest request
+    );
 
+    @GET("messages/conversation/{userId}")
+    Call<ApiResponse<List<Message>>> getDirectConversation(
+            @Path("userId") Long userId,
+            @Header("Authorization") String token
+    );
+
+    @GET("messages/my-conversations")
+    Call<ApiResponse<List<Message>>> getMyConversations(@Header("Authorization") String token);
 }

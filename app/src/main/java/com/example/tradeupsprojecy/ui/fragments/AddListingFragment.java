@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/tradeupsprojecy/ui/fragments/AddListingFragment.java - FIX
 package com.example.tradeupsprojecy.ui.fragments;
 
 import android.os.Bundle;
@@ -18,7 +19,7 @@ import androidx.fragment.app.Fragment;
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Category;
 import com.example.tradeupsprojecy.data.models.CreateItemRequest;
-import com.example.tradeupsprojecy.data.models.Listing;
+import com.example.tradeupsprojecy.data.models.Item;  // ✅ ADD: Import Item
 import com.example.tradeupsprojecy.data.repository.CategoryRepository;
 import com.example.tradeupsprojecy.data.repository.ItemRepository;
 import com.example.tradeupsprojecy.data.local.SessionManager;
@@ -56,7 +57,7 @@ public class AddListingFragment extends Fragment {
         priceEditText = view.findViewById(R.id.priceEditText);
         locationEditText = view.findViewById(R.id.locationInput);
         categorySpinner = view.findViewById(R.id.categorySpinner);
-        conditionSpinner = view.findViewById(R.id.conditionChipGroup); // This might need to be changed based on your layout
+        conditionSpinner = view.findViewById(R.id.conditionChipGroup);
         submitButton = view.findViewById(R.id.publishBtn);
 
         sessionManager = new SessionManager(getContext());
@@ -71,7 +72,6 @@ public class AddListingFragment extends Fragment {
         ArrayAdapter<String> conditionAdapter = new ArrayAdapter<>(
                 getContext(), android.R.layout.simple_spinner_item, conditions);
         conditionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        // conditionSpinner.setAdapter(conditionAdapter); // Uncomment if using spinner
     }
 
     private void setupClickListeners() {
@@ -122,7 +122,7 @@ public class AddListingFragment extends Fragment {
         request.setDescription(descriptionEditText.getText().toString().trim());
         request.setPrice(new BigDecimal(priceEditText.getText().toString().trim()));
         request.setLocation(locationEditText.getText().toString().trim());
-        request.setCondition("New"); // Default condition since spinner might not be set up
+        request.setCondition("New"); // Default condition
 
         // Get selected category ID
         int selectedPosition = categorySpinner.getSelectedItemPosition();
@@ -133,9 +133,10 @@ public class AddListingFragment extends Fragment {
         // Add empty image URLs list for now
         request.setImageUrls(new ArrayList<>());
 
+        // ✅ FIX: Correct callback implementation
         itemRepository.createItem(token, request, new ItemRepository.ItemCallback() {
             @Override
-            public void onSuccess(Listing listing) {
+            public void onSuccess(Item item) {  // ✅ FIX: Use Item type
                 if (getActivity() != null && isAdded()) {
                     Toast.makeText(getContext(), "Listing created successfully!", Toast.LENGTH_SHORT).show();
                     clearForm();
