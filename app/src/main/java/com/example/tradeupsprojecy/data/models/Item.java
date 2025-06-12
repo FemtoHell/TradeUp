@@ -29,6 +29,13 @@ public class Item {
     @SerializedName("user_id")
     private Long userId;
 
+    // THÊM MỚI: Seller information
+    @SerializedName("seller_id")
+    private String sellerId;
+
+    @SerializedName("seller_name")
+    private String sellerName;
+
     @SerializedName("image_urls")
     private List<String> imageUrls;
 
@@ -72,6 +79,13 @@ public class Item {
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
+    // THÊM MỚI: Seller getters/setters
+    public String getSellerId() { return sellerId; }
+    public void setSellerId(String sellerId) { this.sellerId = sellerId; }
+
+    public String getSellerName() { return sellerName; }
+    public void setSellerName(String sellerName) { this.sellerName = sellerName; }
 
     public List<String> getImageUrls() { return imageUrls; }
     public void setImageUrls(List<String> imageUrls) { this.imageUrls = imageUrls; }

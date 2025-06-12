@@ -1,6 +1,7 @@
 package com.example.tradeupsprojecy.data.repository;
 
 import com.example.tradeupsprojecy.data.models.Category;
+import com.example.tradeupsprojecy.data.models.CreateItemRequest;
 import com.example.tradeupsprojecy.data.models.Item;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -69,6 +70,32 @@ public class ItemRepository {
         }).start();
     }
 
+    // THÊM MỚI: Create item method
+    public void createItem(String token, CreateItemRequest request, ItemCallback callback) {
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000); // Simulate network delay
+
+                // Create demo item from request
+                Item newItem = new Item();
+                newItem.setId(System.currentTimeMillis()); // Demo ID
+                newItem.setTitle(request.getTitle());
+                newItem.setDescription(request.getDescription());
+                newItem.setPrice(request.getPrice());
+                newItem.setLocation(request.getLocation());
+                newItem.setCondition(request.getCondition());
+                newItem.setCategoryId(request.getCategoryId());
+                newItem.setImageUrls(request.getImageUrls());
+                newItem.setSellerId("demo_user_id");
+                newItem.setSellerName("Demo User");
+
+                callback.onSuccess(newItem);
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+
     private List<Item> generateDemoItems() {
         List<Item> items = new ArrayList<>();
         String[] titles = {
@@ -83,6 +110,7 @@ public class ItemRepository {
         };
 
         String[] conditions = {"Mới", "Như mới", "Đã sử dụng", "Cũ"};
+        String[] sellerNames = {"Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Thị D", "Hoàng Văn E"};
 
         Random random = new Random();
 
@@ -95,6 +123,10 @@ public class ItemRepository {
             item.setLocation(locations[random.nextInt(locations.length)]);
             item.setCondition(conditions[random.nextInt(conditions.length)]);
             item.setCategoryId((long) (random.nextInt(5) + 1));
+
+            // THÊM MỚI: Seller information
+            item.setSellerId("seller_" + (i + 1));
+            item.setSellerName(sellerNames[random.nextInt(sellerNames.length)]);
 
             // Add demo images
             List<String> imageUrls = Arrays.asList(

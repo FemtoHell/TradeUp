@@ -62,6 +62,7 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     annotationProcessor("androidx.room:room-compiler:2.6.1")
 
+    // Custom Views
     implementation("de.hdodenhof:circleimageview:3.1.0")
 
     // Network
@@ -72,6 +73,12 @@ dependencies {
     // Image Loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // Google Play Services - THÊM MỚI
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-tasks:18.0.2")
 
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
