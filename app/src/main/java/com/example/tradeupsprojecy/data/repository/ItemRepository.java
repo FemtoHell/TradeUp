@@ -1,22 +1,18 @@
-// app/src/main/java/com/example/tradeupsprojecy/data/repository/ItemRepository.java - FIX COMPLETE
 package com.example.tradeupsprojecy.data.repository;
 
-import com.example.tradeupsprojecy.data.models.*;
-import com.example.tradeupsprojecy.data.models.response.*;
-import com.example.tradeupsprojecy.data.network.ApiService;
-import com.example.tradeupsprojecy.data.network.NetworkClient;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import com.example.tradeupsprojecy.data.models.Category;
+import com.example.tradeupsprojecy.data.models.Item;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import android.util.Log;
+import java.util.Random;
 
 public class ItemRepository {
-    private static final String TAG = "ItemRepository";
-    private ApiService apiService;
 
-    public ItemRepository() {
-        this.apiService = NetworkClient.getApiService();
+    public interface ItemsCallback {
+        void onSuccess(List<Item> items);
+        void onError(String error);
     }
 
     public interface ItemCallback {
@@ -24,138 +20,101 @@ public class ItemRepository {
         void onError(String error);
     }
 
-    public interface ItemsCallback {
-        void onSuccess(List<Item> items);
-        void onError(String error);
-    }
-
     public void getAllItems(ItemsCallback callback) {
-        Log.d(TAG, "Getting all items");
-        Call<ApiResponse<List<Item>>> call = apiService.getAllItems();
-        call.enqueue(new Callback<ApiResponse<List<Item>>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<List<Item>>> call, Response<ApiResponse<List<Item>>> response) {
-                Log.d(TAG, "Response received - Code: " + response.code());
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<Item>> apiResponse = response.body();
-                    Log.d(TAG, "API Response - Success: " + apiResponse.isSuccess());
-                    if (apiResponse.isSuccess()) {
-                        List<Item> items = apiResponse.getData();
-                        Log.d(TAG, "Items received: " + (items != null ? items.size() : 0));
-                        callback.onSuccess(items);
-                    } else {
-                        Log.e(TAG, "API Error: " + apiResponse.getMessage());
-                        callback.onError(apiResponse.getMessage());
-                    }
-                } else {
-                    Log.e(TAG, "Response not successful");
-                    callback.onError("Failed to load items");
-                }
+        // Generate demo data
+        new Thread(() -> {
+            try {
+                Thread.sleep(1000); // Simulate network delay
+                List<Item> items = generateDemoItems();
+                callback.onSuccess(items);
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
             }
-
-            @Override
-            public void onFailure(Call<ApiResponse<List<Item>>> call, Throwable t) {
-                Log.e(TAG, "Network error: " + t.getMessage());
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+        }).start();
     }
 
     public void getFeaturedItems(ItemsCallback callback) {
-        Log.d(TAG, "Getting featured items");
-        Call<ApiResponse<List<Item>>> call = apiService.getFeaturedItems();
-        call.enqueue(new Callback<ApiResponse<List<Item>>>() {  // ✅ FIX: Proper callback syntax
-            @Override
-            public void onResponse(Call<ApiResponse<List<Item>>> call, Response<ApiResponse<List<Item>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<Item>> apiResponse = response.body();
-                    if (apiResponse.isSuccess()) {
-                        callback.onSuccess(apiResponse.getData());
-                    } else {
-                        callback.onError(apiResponse.getMessage());
-                    }
-                } else {
-                    callback.onError("Failed to load featured items");
-                }
+        new Thread(() -> {
+            try {
+                Thread.sleep(800);
+                List<Item> items = generateDemoItems();
+                callback.onSuccess(items.subList(0, Math.min(5, items.size())));
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
             }
-
-            @Override
-            public void onFailure(Call<ApiResponse<List<Item>>> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+        }).start();
     }
 
     public void getRecentItems(ItemsCallback callback) {
-        Log.d(TAG, "Getting recent items");
-        Call<ApiResponse<List<Item>>> call = apiService.getRecentItems();
-        call.enqueue(new Callback<ApiResponse<List<Item>>>() {  // ✅ FIX: Remove call2, proper syntax
-            @Override
-            public void onResponse(Call<ApiResponse<List<Item>>> call, Response<ApiResponse<List<Item>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<Item>> apiResponse = response.body();
-                    if (apiResponse.isSuccess()) {
-                        callback.onSuccess(apiResponse.getData());
-                    } else {
-                        callback.onError(apiResponse.getMessage());
-                    }
-                } else {
-                    callback.onError("Failed to load recent items");
-                }
+        new Thread(() -> {
+            try {
+                Thread.sleep(600);
+                List<Item> items = generateDemoItems();
+                callback.onSuccess(items);
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
             }
-
-            @Override
-            public void onFailure(Call<ApiResponse<List<Item>>> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+        }).start();
     }
 
     public void getItemById(Long itemId, ItemCallback callback) {
-        Call<ApiResponse<Item>> call = apiService.getItemById(itemId);
-        call.enqueue(new Callback<ApiResponse<Item>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<Item>> call, Response<ApiResponse<Item>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Item> apiResponse = response.body();
-                    if (apiResponse.isSuccess()) {
-                        callback.onSuccess(apiResponse.getData());
-                    } else {
-                        callback.onError(apiResponse.getMessage());
-                    }
-                } else {
-                    callback.onError("Failed to load item");
-                }
+        new Thread(() -> {
+            try {
+                Thread.sleep(500);
+                Item item = generateDemoItem(itemId);
+                callback.onSuccess(item);
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
             }
-
-            @Override
-            public void onFailure(Call<ApiResponse<Item>> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+        }).start();
     }
 
-    public void createItem(String token, CreateItemRequest request, ItemCallback callback) {
-        Call<ApiResponse<Item>> call = apiService.createItem("Bearer " + token, request);
-        call.enqueue(new Callback<ApiResponse<Item>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<Item>> call, Response<ApiResponse<Item>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<Item> apiResponse = response.body();
-                    if (apiResponse.isSuccess()) {
-                        callback.onSuccess(apiResponse.getData());
-                    } else {
-                        callback.onError(apiResponse.getMessage());
-                    }
-                } else {
-                    callback.onError("Failed to create item");
-                }
-            }
+    private List<Item> generateDemoItems() {
+        List<Item> items = new ArrayList<>();
+        String[] titles = {
+                "iPhone 15 Pro Max", "Samsung Galaxy S24", "MacBook Air M3", "AirPods Pro 2",
+                "iPad Pro 12.9", "Sony WH-1000XM5", "Nintendo Switch OLED", "PlayStation 5",
+                "Canon EOS R6", "Apple Watch Series 9", "Surface Laptop 5", "Kindle Paperwhite"
+        };
 
-            @Override
-            public void onFailure(Call<ApiResponse<Item>> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+        String[] locations = {
+                "Quận 1, TP.HCM", "Quận 3, TP.HCM", "Quận 7, TP.HCM", "Thủ Đức, TP.HCM",
+                "Hà Nội", "Đà Nẵng", "Cần Thơ", "Nha Trang"
+        };
+
+        String[] conditions = {"Mới", "Như mới", "Đã sử dụng", "Cũ"};
+
+        Random random = new Random();
+
+        for (int i = 0; i < titles.length; i++) {
+            Item item = new Item();
+            item.setId((long) (i + 1));
+            item.setTitle(titles[i]);
+            item.setDescription("Mô tả chi tiết cho " + titles[i] + ". Sản phẩm chất lượng cao, bảo hành đầy đủ.");
+            item.setPrice(new BigDecimal(random.nextInt(50000000) + 1000000)); // 1M - 50M VND
+            item.setLocation(locations[random.nextInt(locations.length)]);
+            item.setCondition(conditions[random.nextInt(conditions.length)]);
+            item.setCategoryId((long) (random.nextInt(5) + 1));
+
+            // Add demo images
+            List<String> imageUrls = Arrays.asList(
+                    "https://picsum.photos/400/300?random=" + (i * 3 + 1),
+                    "https://picsum.photos/400/300?random=" + (i * 3 + 2),
+                    "https://picsum.photos/400/300?random=" + (i * 3 + 3)
+            );
+            item.setImageUrls(imageUrls);
+
+            items.add(item);
+        }
+
+        return items;
+    }
+
+    private Item generateDemoItem(Long itemId) {
+        List<Item> items = generateDemoItems();
+        return items.stream()
+                .filter(item -> item.getId().equals(itemId))
+                .findFirst()
+                .orElse(items.get(0));
     }
 }

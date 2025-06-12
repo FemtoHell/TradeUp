@@ -1,36 +1,35 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/fragments/AddListingFragment.java - FIX
 package com.example.tradeupsprojecy.ui.fragments;
 
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
 import com.example.tradeupsprojecy.R;
 import com.example.tradeupsprojecy.data.models.Category;
 import com.example.tradeupsprojecy.data.models.CreateItemRequest;
-import com.example.tradeupsprojecy.data.models.Item;  // ✅ ADD: Import Item
+import com.example.tradeupsprojecy.data.models.Item;
 import com.example.tradeupsprojecy.data.repository.CategoryRepository;
 import com.example.tradeupsprojecy.data.repository.ItemRepository;
 import com.example.tradeupsprojecy.data.local.SessionManager;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AddListingFragment extends Fragment {
+
     private EditText titleEditText, descriptionEditText, priceEditText, locationEditText;
-    private Spinner categorySpinner, conditionSpinner;
+    private AutoCompleteTextView categorySpinner;
     private Button submitButton;
 
     private List<Category> categories;
@@ -44,7 +43,7 @@ public class AddListingFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_add_listing, container, false);
 
         initViews(view);
-        setupSpinners();
+        setupValidation();
         loadCategories();
         setupClickListeners();
 
@@ -57,7 +56,6 @@ public class AddListingFragment extends Fragment {
         priceEditText = view.findViewById(R.id.priceEditText);
         locationEditText = view.findViewById(R.id.locationInput);
         categorySpinner = view.findViewById(R.id.categorySpinner);
-        conditionSpinner = view.findViewById(R.id.conditionChipGroup);
         submitButton = view.findViewById(R.id.publishBtn);
 
         sessionManager = new SessionManager(getContext());
@@ -66,16 +64,45 @@ public class AddListingFragment extends Fragment {
         categories = new ArrayList<>();
     }
 
-    private void setupSpinners() {
-        // Setup condition spinner
-        String[] conditions = {"New", "Like New", "Good", "Fair", "Poor"};
-        ArrayAdapter<String> conditionAdapter = new ArrayAdapter<>(
-                getContext(), android.R.layout.simple_spinner_item, conditions);
-        conditionAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    private void setupValidation() {
+        TextWatcher textWatcher = new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                updateSubmitButtonState();
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
+        };
+
+        titleEditText.addTextChangedListener(textWatcher);
+        descriptionEditText.addTextChangedListener(textWatcher);
+        priceEditText.addTextChangedListener(textWatcher);
+        locationEditText.addTextChangedListener(textWatcher);
+
+        // Initial state
+        updateSubmitButtonState();
+    }
+
+    private void updateSubmitButtonState() {
+        boolean isValid = !titleEditText.getText().toString().trim().isEmpty() &&
+                !descriptionEditText.getText().toString().trim().isEmpty() &&
+                !priceEditText.getText().toString().trim().isEmpty() &&
+                !locationEditText.getText().toString().trim().isEmpty();
+
+        submitButton.setEnabled(isValid);
+        submitButton.setAlpha(isValid ? 1.0f : 0.5f);
     }
 
     private void setupClickListeners() {
-        submitButton.setOnClickListener(v -> submitListing());
+        submitButton.setOnClickListener(v -> {
+            if (validateForm()) {
+                submitListing();
+            }
+        });
     }
 
     private void loadCategories() {
@@ -93,9 +120,28 @@ public class AddListingFragment extends Fragment {
             public void onError(String error) {
                 if (getActivity() != null && isAdded()) {
                     Toast.makeText(getContext(), "Failed to load categories: " + error, Toast.LENGTH_SHORT).show();
+                    // Add default categories
+                    setupDefaultCategories();
                 }
             }
         });
+    }
+
+    private void setupDefaultCategories() {
+        categories.clear();
+        // Add some default categories
+        Category electronics = new Category("Electronics", "Electronic devices");
+        electronics.setId(1L);
+        Category fashion = new Category("Fashion", "Clothing and accessories");
+        fashion.setId(2L);
+        Category home = new Category("Home & Garden", "Home and garden items");
+        home.setId(3L);
+
+        categories.add(electronics);
+        categories.add(fashion);
+        categories.add(home);
+
+        setupCategorySpinner();
     }
 
     private void setupCategorySpinner() {
@@ -105,16 +151,65 @@ public class AddListingFragment extends Fragment {
         }
 
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                getContext(), android.R.layout.simple_spinner_item, categoryNames);
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                getContext(), android.R.layout.simple_dropdown_item_1line, categoryNames);
         categorySpinner.setAdapter(adapter);
     }
 
+    private boolean validateForm() {
+        String title = titleEditText.getText().toString().trim();
+        String description = descriptionEditText.getText().toString().trim();
+        String priceStr = priceEditText.getText().toString().trim();
+        String location = locationEditText.getText().toString().trim();
+
+        if (title.length() < 5) {
+            titleEditText.setError("Title must be at least 5 characters");
+            titleEditText.requestFocus();
+            return false;
+        }
+
+        if (description.length() < 10) {
+            descriptionEditText.setError("Description must be at least 10 characters");
+            descriptionEditText.requestFocus();
+            return false;
+        }
+
+        try {
+            double price = Double.parseDouble(priceStr);
+            if (price <= 0) {
+                priceEditText.setError("Price must be greater than 0");
+                priceEditText.requestFocus();
+                return false;
+            }
+        } catch (NumberFormatException e) {
+            priceEditText.setError("Invalid price format");
+            priceEditText.requestFocus();
+            return false;
+        }
+
+        if (location.length() < 3) {
+            locationEditText.setError("Location is required");
+            locationEditText.requestFocus();
+            return false;
+        }
+
+        return true;
+    }
+
     private void submitListing() {
-        // Validate inputs
-        if (!validateInputs()) return;
+        if (!sessionManager.isLoggedIn()) {
+            Toast.makeText(getContext(), "Please login first", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         String token = sessionManager.getToken();
+        if (token == null || token.isEmpty()) {
+            Toast.makeText(getContext(), "Authentication required", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show loading
+        submitButton.setEnabled(false);
+        submitButton.setText("Publishing...");
 
         // Create request
         CreateItemRequest request = new CreateItemRequest();
@@ -125,21 +220,27 @@ public class AddListingFragment extends Fragment {
         request.setCondition("New"); // Default condition
 
         // Get selected category ID
-        int selectedPosition = categorySpinner.getSelectedItemPosition();
-        if (selectedPosition >= 0 && selectedPosition < categories.size()) {
-            request.setCategoryId(categories.get(selectedPosition).getId());
+        String selectedCategory = categorySpinner.getText().toString();
+        for (Category category : categories) {
+            if (category.getName().equals(selectedCategory)) {
+                request.setCategoryId(category.getId());
+                break;
+            }
         }
 
-        // Add empty image URLs list for now
-        request.setImageUrls(new ArrayList<>());
+        // Add demo images
+        List<String> imageUrls = new ArrayList<>();
+        imageUrls.add("https://picsum.photos/400/300?random=" + System.currentTimeMillis());
+        imageUrls.add("https://picsum.photos/400/300?random=" + (System.currentTimeMillis() + 1));
+        request.setImageUrls(imageUrls);
 
-        // ✅ FIX: Correct callback implementation
         itemRepository.createItem(token, request, new ItemRepository.ItemCallback() {
             @Override
-            public void onSuccess(Item item) {  // ✅ FIX: Use Item type
+            public void onSuccess(Item item) {
                 if (getActivity() != null && isAdded()) {
                     Toast.makeText(getContext(), "Listing created successfully!", Toast.LENGTH_SHORT).show();
                     clearForm();
+                    resetSubmitButton();
                 }
             }
 
@@ -147,40 +248,16 @@ public class AddListingFragment extends Fragment {
             public void onError(String error) {
                 if (getActivity() != null && isAdded()) {
                     Toast.makeText(getContext(), "Failed to create listing: " + error, Toast.LENGTH_SHORT).show();
+                    resetSubmitButton();
                 }
             }
         });
     }
 
-    private boolean validateInputs() {
-        if (TextUtils.isEmpty(titleEditText.getText())) {
-            titleEditText.setError("Title is required");
-            return false;
-        }
-
-        if (TextUtils.isEmpty(descriptionEditText.getText())) {
-            descriptionEditText.setError("Description is required");
-            return false;
-        }
-
-        if (TextUtils.isEmpty(priceEditText.getText())) {
-            priceEditText.setError("Price is required");
-            return false;
-        }
-
-        try {
-            new BigDecimal(priceEditText.getText().toString().trim());
-        } catch (NumberFormatException e) {
-            priceEditText.setError("Invalid price format");
-            return false;
-        }
-
-        if (TextUtils.isEmpty(locationEditText.getText())) {
-            locationEditText.setError("Location is required");
-            return false;
-        }
-
-        return true;
+    private void resetSubmitButton() {
+        submitButton.setEnabled(true);
+        submitButton.setText("Publish Listing");
+        updateSubmitButtonState();
     }
 
     private void clearForm() {
@@ -188,6 +265,6 @@ public class AddListingFragment extends Fragment {
         descriptionEditText.setText("");
         priceEditText.setText("");
         locationEditText.setText("");
-        categorySpinner.setSelection(0);
+        categorySpinner.setText("");
     }
 }

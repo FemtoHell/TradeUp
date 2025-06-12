@@ -1,21 +1,10 @@
-// app/src/main/java/com/example/tradeupsprojecy/data/repository/CategoryRepository.java
 package com.example.tradeupsprojecy.data.repository;
 
-import com.example.tradeupsprojecy.data.models.response.ApiResponse;
 import com.example.tradeupsprojecy.data.models.Category;
-import com.example.tradeupsprojecy.data.network.ApiService;
-import com.example.tradeupsprojecy.data.network.NetworkClient;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CategoryRepository {
-    private ApiService apiService;
-
-    public CategoryRepository() {
-        this.apiService = NetworkClient.getApiService();
-    }
 
     public interface CategoriesCallback {
         void onSuccess(List<Category> categories);
@@ -23,50 +12,44 @@ public class CategoryRepository {
     }
 
     public void getCategories(CategoriesCallback callback) {
-        Call<ApiResponse<List<Category>>> call = apiService.getCategories();
-        call.enqueue(new Callback<ApiResponse<List<Category>>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<List<Category>>> call, Response<ApiResponse<List<Category>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<Category>> apiResponse = response.body();
-                    if (apiResponse.isSuccess()) {
-                        callback.onSuccess(apiResponse.getData());
-                    } else {
-                        callback.onError(apiResponse.getMessage());
-                    }
-                } else {
-                    callback.onError("Failed to load categories");
-                }
+        new Thread(() -> {
+            try {
+                Thread.sleep(500);
+                List<Category> categories = generateDemoCategories();
+                callback.onSuccess(categories);
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
             }
-
-            @Override
-            public void onFailure(Call<ApiResponse<List<Category>>> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+        }).start();
     }
 
     public void getAllCategories(CategoriesCallback callback) {
-        Call<ApiResponse<List<Category>>> call = apiService.getAllCategories();
-        call.enqueue(new Callback<ApiResponse<List<Category>>>() {
-            @Override
-            public void onResponse(Call<ApiResponse<List<Category>>> call, Response<ApiResponse<List<Category>>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    ApiResponse<List<Category>> apiResponse = response.body();
-                    if (apiResponse.isSuccess()) {
-                        callback.onSuccess(apiResponse.getData());
-                    } else {
-                        callback.onError(apiResponse.getMessage());
-                    }
-                } else {
-                    callback.onError("Failed to load all categories");
-                }
-            }
+        getCategories(callback);
+    }
 
-            @Override
-            public void onFailure(Call<ApiResponse<List<Category>>> call, Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-        });
+    private List<Category> generateDemoCategories() {
+        List<Category> categories = new ArrayList<>();
+
+        String[] names = {"Điện tử", "Thời trang", "Xe cộ", "Nhà cửa", "Thể thao", "Sách", "Mỹ phẩm", "Đồ chơi"};
+        String[] descriptions = {
+                "Điện thoại, laptop, máy tính bảng",
+                "Quần áo, giày dép, phụ kiện",
+                "Xe máy, ô tô, phụ tung",
+                "Nội thất, đồ gia dụng",
+                "Dụng cụ thể thao, quần áo thể thao",
+                "Sách giáo khoa, tiểu thuyết, truyện tranh",
+                "Mỹ phẩm, chăm sóc da",
+                "Đồ chơi trẻ em, mô hình"
+        };
+
+        for (int i = 0; i < names.length; i++) {
+            Category category = new Category();
+            category.setId((long) (i + 1));
+            category.setName(names[i]);
+            category.setDescription(descriptions[i]);
+            categories.add(category);
+        }
+
+        return categories;
     }
 }

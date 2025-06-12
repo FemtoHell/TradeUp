@@ -112,4 +112,6 @@
     <color name="loading_background">#80FFFFFF</color>
     <color name="shimmer_base">#F0F0F0</color>
     <color name="shimmer_highlight">#FFFFFF</color>
+
+
 </resources>

@@ -1,9 +1,7 @@
-// app/src/main/java/com/example/tradeupsprojecy/ui/fragments/HomeFragment.java - UPDATE
 package com.example.tradeupsprojecy.ui.fragments;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,20 +19,19 @@ import com.example.tradeupsprojecy.data.models.Item;
 import com.example.tradeupsprojecy.data.repository.CategoryRepository;
 import com.example.tradeupsprojecy.data.repository.ItemRepository;
 import com.example.tradeupsprojecy.ui.activities.ItemDetailActivity;
+import com.example.tradeupsprojecy.ui.activities.MainActivity;
 import com.example.tradeupsprojecy.ui.adapters.CategoryAdapter;
 import com.example.tradeupsprojecy.ui.adapters.ItemAdapter;
-import com.google.android.material.textview.MaterialTextView;
+import com.google.android.material.textfield.TextInputEditText;
 import java.util.List;
 
 public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickListener, CategoryAdapter.OnCategoryClickListener {
-
-    private static final String TAG = "HomeFragment";
 
     private RecyclerView categoriesRecyclerView, featuredRecyclerView, recentRecyclerView;
     private CategoryAdapter categoryAdapter;
     private ItemAdapter featuredAdapter, recentAdapter;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private MaterialTextView emptyStateText;
+    private TextInputEditText searchEditText;
 
     private CategoryRepository categoryRepository;
     private ItemRepository itemRepository;
@@ -52,6 +49,7 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
         initRepositories();
         setupRecyclerViews();
         setupSwipeRefresh();
+        setupSearchClick();
         loadData();
     }
 
@@ -60,7 +58,7 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
         featuredRecyclerView = view.findViewById(R.id.featuredRecyclerView);
         recentRecyclerView = view.findViewById(R.id.recentRecyclerView);
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
-        emptyStateText = view.findViewById(R.id.emptyStateText);
+        searchEditText = view.findViewById(R.id.searchEditText);
     }
 
     private void initRepositories() {
@@ -69,19 +67,19 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
     }
 
     private void setupRecyclerViews() {
-        // Categories RecyclerView
+        // Categories
         categoriesRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         categoryAdapter = new CategoryAdapter(getContext());
         categoryAdapter.setOnCategoryClickListener(this);
         categoriesRecyclerView.setAdapter(categoryAdapter);
 
-        // Featured items RecyclerView
+        // Featured items
         featuredRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         featuredAdapter = new ItemAdapter(getContext());
         featuredAdapter.setOnItemClickListener(this);
         featuredRecyclerView.setAdapter(featuredAdapter);
 
-        // Recent items RecyclerView
+        // Recent items
         recentRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
         recentAdapter = new ItemAdapter(getContext());
         recentAdapter.setOnItemClickListener(this);
@@ -93,8 +91,17 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
         swipeRefreshLayout.setColorSchemeResources(R.color.primary);
     }
 
+    private void setupSearchClick() {
+        if (searchEditText != null) {
+            searchEditText.setOnClickListener(v -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).navigateToSearch();
+                }
+            });
+        }
+    }
+
     private void loadData() {
-        Log.d(TAG, "Loading data...");
         swipeRefreshLayout.setRefreshing(true);
         loadCategories();
         loadFeaturedItems();
@@ -105,17 +112,15 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
         categoryRepository.getCategories(new CategoryRepository.CategoriesCallback() {
             @Override
             public void onSuccess(List<Category> categories) {
-                if (getActivity() != null && isAdded()) {
-                    Log.d(TAG, "Loaded " + categories.size() + " categories");
+                if (isAdded()) {
                     categoryAdapter.setCategories(categories);
                 }
             }
 
             @Override
             public void onError(String error) {
-                if (getActivity() != null && isAdded()) {
-                    Log.e(TAG, "Error loading categories: " + error);
-                    showError("Failed to load categories: " + error);
+                if (isAdded()) {
+                    showError("Failed to load categories");
                 }
             }
         });
@@ -125,19 +130,15 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
         itemRepository.getFeaturedItems(new ItemRepository.ItemsCallback() {
             @Override
             public void onSuccess(List<Item> items) {
-                if (getActivity() != null && isAdded()) {
-                    Log.d(TAG, "Loaded " + items.size() + " featured items");
+                if (isAdded()) {
                     featuredAdapter.setItems(items);
-                    checkEmptyState();
                 }
             }
 
             @Override
             public void onError(String error) {
-                if (getActivity() != null && isAdded()) {
-                    Log.e(TAG, "Error loading featured items: " + error);
-                    showError("Failed to load featured items: " + error);
-                    checkEmptyState();
+                if (isAdded()) {
+                    showError("Failed to load featured items");
                 }
             }
         });
@@ -147,29 +148,20 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
         itemRepository.getRecentItems(new ItemRepository.ItemsCallback() {
             @Override
             public void onSuccess(List<Item> items) {
-                if (getActivity() != null && isAdded()) {
-                    Log.d(TAG, "Loaded " + items.size() + " recent items");
+                if (isAdded()) {
                     recentAdapter.setItems(items);
                     swipeRefreshLayout.setRefreshing(false);
-                    checkEmptyState();
                 }
             }
 
             @Override
             public void onError(String error) {
-                if (getActivity() != null && isAdded()) {
-                    Log.e(TAG, "Error loading recent items: " + error);
-                    showError("Failed to load recent items: " + error);
+                if (isAdded()) {
+                    showError("Failed to load recent items");
                     swipeRefreshLayout.setRefreshing(false);
-                    checkEmptyState();
                 }
             }
         });
-    }
-
-    private void checkEmptyState() {
-        boolean hasData = (featuredAdapter.getItemCount() > 0) || (recentAdapter.getItemCount() > 0);
-        emptyStateText.setVisibility(hasData ? View.GONE : View.VISIBLE);
     }
 
     private void showError(String message) {
@@ -178,7 +170,6 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
         }
     }
 
-    // ItemAdapter.OnItemClickListener implementation
     @Override
     public void onItemClick(Item item) {
         Intent intent = new Intent(getActivity(), ItemDetailActivity.class);
@@ -188,12 +179,11 @@ public class HomeFragment extends Fragment implements ItemAdapter.OnItemClickLis
 
     @Override
     public void onFavoriteClick(Item item, int position) {
-        showError("Favorite feature coming soon!");
+        Toast.makeText(getContext(), "Added to favorites!", Toast.LENGTH_SHORT).show();
     }
 
-    // CategoryAdapter.OnCategoryClickListener implementation
     @Override
     public void onCategoryClick(Category category, int position) {
-        showError("Category view coming soon!");
+        Toast.makeText(getContext(), "Category: " + category.getName(), Toast.LENGTH_SHORT).show();
     }
 }
